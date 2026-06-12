@@ -13,3 +13,10 @@ defineEmits<{ select: [claim: Claim] }>();
     </li>
   </ul>
 </template>
+
+<style scoped>
+.claim { cursor: pointer; padding: .4rem; }
+.label-grounded { border-left: 4px solid #2e7d32; }
+.label-partial { border-left: 4px solid #f9a825; }
+.label-unsupported { border-left: 4px solid #c62828; }
+</style>

@@ -35,10 +35,5 @@ const sc = computed(() => props.fixture.scorecard);
 
 <style scoped>
 .two-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.label-grounded { border-left: 4px solid #2e7d32; }
-.label-partial { border-left: 4px solid #f9a825; }
-.label-unsupported { border-left: 4px solid #c62828; }
-.span-active { background: #fff59d; }
-.claim { cursor: pointer; padding: .4rem; }
 .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 </style>
