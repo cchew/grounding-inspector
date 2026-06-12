@@ -1,0 +1,35 @@
+{
+  "fixture_id": "travel-pds-01",
+  "source": {
+    "title": "SunSafe Travel Insurance — Product Disclosure Statement (synthetic)",
+    "sections": [
+      { "id": "s1", "page": 1, "char_start": 0, "char_end": 120,
+        "text": "SunSafe Travel Insurance PDS. This document sets out what is and is not covered." },
+      { "id": "s4_2", "page": 12, "char_start": 0, "char_end": 140,
+        "text": "Overseas medical expenses are covered up to $10,000,000 for emergency treatment while travelling." },
+      { "id": "s7_1", "page": 22, "char_start": 0, "char_end": 150,
+        "text": "Baggage and personal effects are covered subject to a sub-limit of $1,000 per item and $5,000 in total." },
+      { "id": "s9", "page": 30, "char_start": 0, "char_end": 120,
+        "text": "Exclusions: claims arising from extreme sports, war, or pre-existing conditions are not payable." }
+    ]
+  },
+  "ai_output": "This policy is excellent value for money and the best choice for families. Overseas medical is covered up to $10,000,000. Individual lost items are covered up to $5,000 each.",
+  "claims": [
+    { "id": "c1", "text": "This policy is excellent value for money and the best choice for families.",
+      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
+      "rationale": "No value-for-money or suitability judgment exists anywhere in the PDS." },
+    { "id": "c2", "text": "Overseas medical is covered up to $10,000,000.",
+      "label": "grounded", "evidence_span_ids": ["s4_2"], "quote": "covered up to $10,000,000", "page": 12,
+      "rationale": "Section s4_2 states exactly this limit." },
+    { "id": "c3", "text": "Individual lost items are covered up to $5,000 each.",
+      "label": "partial", "evidence_span_ids": ["s7_1"], "quote": "sub-limit of $1,000 per item", "page": 22,
+      "rationale": "Baggage is covered, but the per-item limit is $1,000, not $5,000; the claim overstates it." }
+  ],
+  "groundedness": { "score": 50, "n_grounded": 1, "n_partial": 1, "n_unsupported": 1 },
+  "scorecard": {
+    "recall": 0.0, "recall_ci": [0.0, 0.0], "false_negatives": 0, "n_positive": 0,
+    "citation_precision": null, "cohen_kappa": null,
+    "validated_on": "placeholder — replaced by engine in Phase 3",
+    "domain_note": "benchmark distribution; NOT measured on PDS"
+  }
+}
