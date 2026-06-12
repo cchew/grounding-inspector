@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GroundingInspectorFixture",
+  "type": "object",
+  "required": ["fixture_id", "source", "ai_output", "claims", "groundedness", "scorecard"],
+  "additionalProperties": false,
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["title", "sections"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "page", "char_start", "char_end", "text"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "page": { "type": "integer", "minimum": 1 },
+              "char_start": { "type": "integer", "minimum": 0 },
+              "char_end": { "type": "integer", "minimum": 0 },
+              "text": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "ai_output": { "type": "string" },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "label", "evidence_span_ids", "quote", "page", "rationale"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" },
+          "label": { "enum": ["grounded", "partial", "unsupported"] },
+          "evidence_span_ids": { "type": "array", "items": { "type": "string" } },
+          "quote": { "type": ["string", "null"] },
+          "page": { "type": ["integer", "null"] },
+          "rationale": { "type": "string" }
+        }
+      }
+    },
+    "groundedness": {
+      "type": "object",
+      "required": ["score", "n_grounded", "n_partial", "n_unsupported"],
+      "additionalProperties": false,
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "n_grounded": { "type": "integer", "minimum": 0 },
+        "n_partial": { "type": "integer", "minimum": 0 },
+        "n_unsupported": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "scorecard": {
+      "type": "object",
+      "required": ["recall", "recall_ci", "false_negatives", "n_positive", "validated_on", "domain_note"],
+      "additionalProperties": false,
+      "properties": {
+        "recall": { "type": "number", "minimum": 0, "maximum": 1 },
+        "recall_ci": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "false_negatives": { "type": "integer", "minimum": 0 },
+        "n_positive": { "type": "integer", "minimum": 0 },
+        "citation_precision": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "cohen_kappa": { "type": ["number", "null"] },
+        "validated_on": { "type": "string" },
+        "domain_note": { "type": "string" }
+      }
+    }
+  }
+}
