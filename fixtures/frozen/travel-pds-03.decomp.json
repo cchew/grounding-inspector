@@ -1,0 +1,39 @@
+[
+  {
+    "text": "Pre-existing conditions are fully covered with no exclusions — just declare them on your application.",
+    "subclaims": [
+      "Pre-existing conditions are covered.",
+      "There are no exclusions for pre-existing conditions.",
+      "You must declare pre-existing conditions on your application."
+    ]
+  },
+  {
+    "text": "Mental health is covered up to $1,000 for any mental health treatment abroad.",
+    "subclaims": [
+      "Mental health is covered.",
+      "The mental health coverage limit is $1,000.",
+      "Any type of mental health treatment abroad is covered."
+    ]
+  },
+  {
+    "text": "Skiing and bungee jumping are included at no extra cost.",
+    "subclaims": [
+      "Skiing is covered.",
+      "Bungee jumping is covered.",
+      "These activities have no additional premium."
+    ]
+  },
+  {
+    "text": "Skydiving and extreme sports are also covered under the adventure activities section.",
+    "subclaims": [
+      "Skydiving is covered.",
+      "Extreme sports are covered."
+    ]
+  },
+  {
+    "text": "There are no geographic restrictions on where overseas medical treatment is received.",
+    "subclaims": [
+      "Overseas medical treatment has no geographic restrictions."
+    ]
+  }
+]

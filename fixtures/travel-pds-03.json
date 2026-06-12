@@ -1,0 +1,43 @@
+{
+  "fixture_id": "travel-pds-03",
+  "source": {
+    "title": "SunSafe Travel Insurance — Product Disclosure Statement (synthetic)",
+    "sections": [
+      { "id": "s1", "page": 1, "char_start": 0, "char_end": 110,
+        "text": "SunSafe Travel Insurance PDS. This document sets out what is and is not covered." },
+      { "id": "s3_1", "page": 8, "char_start": 0, "char_end": 170,
+        "text": "Pre-existing medical conditions are excluded unless you have declared them and paid the additional premium. Undeclared conditions will not be covered." },
+      { "id": "s3_2", "page": 9, "char_start": 0, "char_end": 140,
+        "text": "Mental health conditions are covered up to $500 for counselling services when travel is disrupted by a covered event." },
+      { "id": "s6_1", "page": 20, "char_start": 0, "char_end": 145,
+        "text": "Adventure activities: skiing, snowboarding, and bungee jumping are covered at no additional cost. Skydiving is excluded." },
+      { "id": "s9", "page": 30, "char_start": 0, "char_end": 130,
+        "text": "Exclusions: claims arising from extreme sports, war, or pre-existing conditions are not payable." }
+    ]
+  },
+  "ai_output": "Pre-existing conditions are fully covered with no exclusions — just declare them on your application. Mental health is covered up to $1,000 for any mental health treatment abroad. Skiing and bungee jumping are included at no extra cost. Skydiving and extreme sports are also covered under the adventure activities section.",
+  "claims": [
+    { "id": "c1", "text": "Pre-existing conditions are fully covered with no exclusions — just declare them on your application.",
+      "label": "partial", "evidence_span_ids": ["s3_1"], "quote": "declared them and paid the additional premium", "page": 8,
+      "rationale": "Declaration is necessary but not sufficient — the additional premium must also be paid. The claim omits the premium requirement." },
+    { "id": "c2", "text": "Mental health is covered up to $1,000 for any mental health treatment abroad.",
+      "label": "partial", "evidence_span_ids": ["s3_2"], "quote": "up to $500 for counselling services", "page": 9,
+      "rationale": "The limit is $500 (not $1,000) and is restricted to counselling (not all mental health treatment)." },
+    { "id": "c3", "text": "Skiing and bungee jumping are included at no extra cost.",
+      "label": "grounded", "evidence_span_ids": ["s6_1"], "quote": "skiing, snowboarding, and bungee jumping are covered at no additional cost", "page": 20,
+      "rationale": "Section s6_1 confirms both activities at no additional cost." },
+    { "id": "c4", "text": "Skydiving and extreme sports are also covered under the adventure activities section.",
+      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
+      "rationale": "Section s6_1 explicitly excludes skydiving; section s9 excludes extreme sports. The claim is contradicted by the PDS." },
+    { "id": "c5", "text": "There are no geographic restrictions on where overseas medical treatment is received.",
+      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
+      "rationale": "The PDS makes no statement about geographic restrictions on medical treatment — this claim is not in the source." }
+  ],
+  "groundedness": { "score": 40, "n_grounded": 1, "n_partial": 2, "n_unsupported": 2 },
+  "scorecard": {
+    "recall": 0.0, "recall_ci": [0.0, 0.0], "false_negatives": 0, "n_positive": 0,
+    "citation_precision": null, "cohen_kappa": null,
+    "validated_on": "placeholder — replaced by engine in Phase 3",
+    "domain_note": "benchmark distribution; NOT measured on PDS"
+  }
+}
