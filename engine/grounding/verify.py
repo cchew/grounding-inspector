@@ -4,6 +4,8 @@ def chunk_document(text: str, max_chars: int = 1000) -> list[str]:
 def verify_subclaim(subclaim: str, doc_chunks: list[str], scorer) -> tuple[bool, float]:
     """Score the sub-claim against EVERY chunk and max-pool. No retrieval gate:
     we never pre-select top-k chunks, so retrieval recall cannot cap detection."""
+    if not doc_chunks:
+        raise ValueError("doc_chunks must not be empty")
     labels, probs, *_ = scorer.score(docs=doc_chunks, claims=[subclaim] * len(doc_chunks))
     best = max(probs) if probs else 0.0
     return best >= 0.5, float(best)

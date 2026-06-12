@@ -9,8 +9,11 @@ DECOMPOSE_PROMPT = (
 
 def decompose_output(text: str, client, model: str) -> list[dict]:
     resp = client.chat(model=model, messages=[{"role": "user", "content": DECOMPOSE_PROMPT + text}])
-    data = json.loads(resp["message"]["content"])
-    return [{"text": d["claim"], "subclaims": list(d["subclaims"])} for d in data]
+    try:
+        data = json.loads(resp["message"]["content"])
+        return [{"text": d["claim"], "subclaims": list(d["subclaims"])} for d in data]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise ValueError(f"decompose_output: could not parse LLM response: {exc}") from exc
 
 def build_client():
     import ollama

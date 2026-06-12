@@ -5,6 +5,9 @@ from scipy.stats import beta
 _WEIGHTS = {"grounded": 1.0, "partial": 0.5, "unsupported": 0.0}
 
 def groundedness(labels: list[str]) -> dict:
+    bad = [l for l in labels if l not in _WEIGHTS]
+    if bad:
+        raise ValueError(f"unknown label(s): {bad}; expected one of {list(_WEIGHTS)}")
     c = Counter(labels)
     n = len(labels)
     # Use round-half-up (not Python banker's rounding) to match spec
