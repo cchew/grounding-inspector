@@ -1,0 +1,31 @@
+[
+  {
+    "text": "Budget Direct Comprehensive covers trip cancellation up to $10,000 by default.",
+    "subclaims": [
+      "Budget Direct Comprehensive covers trip cancellation.",
+      "The default cancellation limit is $10,000."
+    ]
+  },
+  {
+    "text": "If you lose your job, cancellation is covered — whether the redundancy was your choice or forced upon you.",
+    "subclaims": [
+      "Job loss due to redundancy is a covered cancellation reason.",
+      "Voluntary redundancy (your own choice) is a covered cancellation reason.",
+      "Involuntary redundancy (forced upon you) is a covered cancellation reason."
+    ]
+  },
+  {
+    "text": "The policy covers cancellations caused by COVID-19 and other pandemic events on the same basis as any other unexpected event.",
+    "subclaims": [
+      "COVID-19 cancellations are covered.",
+      "Pandemic cancellations are treated the same as other unexpected events."
+    ]
+  },
+  {
+    "text": "You can increase your cancellation limit above $10,000 by selecting higher cover when you purchase.",
+    "subclaims": [
+      "The cancellation limit can be increased above $10,000.",
+      "Higher limits are selected at purchase time."
+    ]
+  }
+]

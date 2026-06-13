@@ -1,0 +1,38 @@
+[
+  {
+    "text": "Cover-More Comprehensive covers your belongings up to $20,000 in total.",
+    "subclaims": [
+      "Cover-More Comprehensive has luggage coverage.",
+      "The total luggage coverage limit is $20,000."
+    ]
+  },
+  {
+    "text": "Each laptop is covered for up to $5,000.",
+    "subclaims": [
+      "Laptops are covered.",
+      "The per-item limit for laptops is $5,000."
+    ]
+  },
+  {
+    "text": "Cameras are covered for up to $4,000.",
+    "subclaims": [
+      "Cameras are covered.",
+      "The per-item limit for cameras is $4,000."
+    ]
+  },
+  {
+    "text": "Jewellery and watches are covered up to $2,000 per item.",
+    "subclaims": [
+      "Jewellery is covered.",
+      "Watches are covered.",
+      "The per-item limit for jewellery and watches is $2,000."
+    ]
+  },
+  {
+    "text": "Items locked in your car boot overnight are fully covered — there are no restrictions on vehicle storage.",
+    "subclaims": [
+      "Items in a locked car overnight are covered.",
+      "There are no restrictions on leaving items in a vehicle overnight."
+    ]
+  }
+]
