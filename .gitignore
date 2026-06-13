@@ -1,6 +1,12 @@
 *.pyc
+*.tsbuildinfo
+*.vue.js
 __pycache__/
 .venv/
 ckpts/
 dist/
 node_modules/
+playwright-report/
+test-results/
+web/src/*.js
+web/tests/*.js

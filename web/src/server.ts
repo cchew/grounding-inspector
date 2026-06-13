@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -37,3 +38,9 @@ app.get("/api/fixtures/:id", async (c) => {
 });
 
 app.get("/*", serveStatic({ root: join(here, "..", "dist") }));
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const port = Number(process.env["PORT"] ?? 3000);
+  serve({ fetch: app.fetch, port });
+  console.log(`Grounding Inspector server running on http://localhost:${port}`);
+}
