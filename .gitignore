@@ -1,7 +1,9 @@
 *.pyc
 *.tsbuildinfo
 *.vue.js
+.DS_Store
 __pycache__/
+.env
 .venv/
 ckpts/
 dist/
