@@ -73,57 +73,64 @@ function label(id: string): string {
 
 <style scoped>
 .app-shell {
-  max-width: 960px;
+  max-width: var(--reading-width);
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: var(--s-6) var(--s-5);
 }
+
 .app-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid oklch(88% 0.01 80);
+  gap: var(--s-5);
+  margin-bottom: var(--s-5);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
+
 .app-header h1 {
   font-size: 1.125rem;
-  color: oklch(15% 0.01 80);
-  letter-spacing: -0.02em;
+  color: var(--color-ink);
 }
+
 .subtitle {
   font-size: 0.75rem;
-  color: oklch(55% 0.01 80);
+  color: var(--color-ink-3);
   margin-top: 0.2rem;
 }
+
 .fixture-nav {
   display: flex;
-  gap: 0.375rem;
+  gap: var(--s-1);
   flex-wrap: wrap;
   align-items: center;
 }
+
 .fixture-btn {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 0.3125rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid oklch(85% 0.01 80);
-  background: oklch(100% 0 0);
-  color: oklch(35% 0.01 80);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
   cursor: pointer;
-  transition: all 0.12s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: all 0.12s var(--ease-spring);
 }
+
 .fixture-btn:hover {
-  background: oklch(97% 0.005 80);
-  border-color: oklch(75% 0.01 80);
+  background: var(--color-surface-hover);
+  border-color: var(--color-ink-3);
 }
+
 .fixture-btn.active {
-  background: oklch(15% 0.01 80);
-  border-color: oklch(15% 0.01 80);
-  color: oklch(98% 0.005 80);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-bg);
 }
-.load-error { color: oklch(50% 0.16 25); font-size: 0.875rem; }
-.loading { color: oklch(55% 0.01 80); font-size: 0.875rem; }
+
+.load-error { color: var(--chip-unsupported-text); font-size: 0.875rem; }
+.loading { color: var(--color-ink-3); font-size: 0.875rem; }
 </style>

@@ -24,7 +24,7 @@ const sc = computed(() => props.fixture.scorecard);
         </div>
         <p class="scorecard-secondary mono">Groundedness score: {{ g.score }}/100</p>
       </div>
-      <div data-testid="detector-panel" class="scorecard detector-scorecard">
+      <div data-testid="detector-panel" class="scorecard">
         <span class="scorecard-label">DETECTOR</span>
         <p class="scorecard-primary mono">recall {{ sc.recall.toFixed(2) }} (CI {{ sc.recall_ci[0].toFixed(2) }}&ndash;{{ sc.recall_ci[1].toFixed(2) }})</p>
         <p class="scorecard-secondary">{{ sc.validated_on }}</p>
@@ -46,22 +46,23 @@ const sc = computed(() => props.fixture.scorecard);
 </template>
 
 <style scoped>
-.inspector { display: flex; flex-direction: column; gap: 1.5rem; }
+.inspector { display: flex; flex-direction: column; gap: var(--s-5); }
 
 .scorecards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--s-4);
 }
 
 .scorecard {
-  padding: 1rem 1.25rem;
-  background: oklch(100% 0 0);
-  border: 1px solid oklch(88% 0.01 80);
-  border-radius: 10px;
+  padding: var(--s-4) var(--s-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--s-2);
 }
 
 .scorecard-label {
@@ -69,45 +70,51 @@ const sc = computed(() => props.fixture.scorecard);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: oklch(55% 0.01 80);
+  color: var(--color-ink-3);
 }
 
-.scorecard-values { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.scorecard-values { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 
 .label-chip {
   font-size: 0.75rem;
   font-weight: 500;
-  padding: 0.125rem 0.625rem;
-  border-radius: 99px;
-}
-.label-chip.grounded {
-  background: oklch(93% 0.04 175);
-  color: oklch(35% 0.12 175);
-}
-.label-chip.partial {
-  background: oklch(94% 0.05 80);
-  color: oklch(45% 0.14 80);
-}
-.label-chip.unsupported {
-  background: oklch(93% 0.04 25);
-  color: oklch(38% 0.16 25);
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
 }
 
-.scorecard-primary { font-size: 0.875rem; }
-.scorecard-secondary { font-size: 0.75rem; color: oklch(45% 0.01 80); }
-.scorecard-tertiary { font-size: 0.6875rem; color: oklch(60% 0.01 80); font-style: italic; }
+.label-chip.grounded {
+  background: var(--chip-grounded-bg);
+  color: var(--chip-grounded-text);
+  border-color: var(--chip-grounded-border);
+}
+.label-chip.partial {
+  background: var(--chip-partial-bg);
+  color: var(--chip-partial-text);
+  border-color: var(--chip-partial-border);
+}
+.label-chip.unsupported {
+  background: var(--chip-unsupported-bg);
+  color: var(--chip-unsupported-text);
+  border-color: var(--chip-unsupported-border);
+}
+
+.scorecard-primary { font-size: 0.875rem; color: var(--color-ink); }
+.scorecard-secondary { font-size: 0.75rem; color: var(--color-ink-2); }
+.scorecard-tertiary { font-size: 0.6875rem; color: var(--color-ink-3); font-style: italic; }
 
 .two-pane {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: var(--s-5);
   align-items: start;
 }
 
 .pane {
-  background: oklch(100% 0 0);
-  border: 1px solid oklch(88% 0.01 80);
-  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -116,15 +123,15 @@ const sc = computed(() => props.fixture.scorecard);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: oklch(55% 0.01 80);
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid oklch(92% 0.01 80);
+  color: var(--color-ink-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .source-title {
   font-size: 0.75rem;
-  color: oklch(45% 0.01 80);
-  padding: 0.5rem 1rem 0;
+  color: var(--color-ink-2);
+  padding: var(--s-2) var(--s-4) 0;
   font-style: italic;
 }
 </style>

@@ -25,43 +25,44 @@ watch(() => props.activeSpanIds, (ids) => {
 
 <style scoped>
 .source-doc {
-  padding: 0.5rem 0;
+  padding: var(--s-2) 0;
   max-height: 480px;
   overflow-y: auto;
 }
 
 .section {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.625rem 1rem;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
   font-size: 0.8125rem;
   line-height: 1.6;
-  transition: background 0.15s cubic-bezier(0.2, 0.7, 0.2, 1);
+  border-left: 3px solid transparent;
+  transition: background 0.15s var(--ease-spring);
 }
 
-.section + .section { border-top: 1px solid oklch(95% 0.005 80); }
+.section + .section { border-top: 1px solid var(--color-border-light); }
 
 .section.span-active {
-  background: oklch(94% 0.06 80);
-  border-left: 3px solid oklch(68% 0.14 80);
+  background: var(--color-accent-bg);
+  border-left-color: var(--color-accent-border);
 }
 
 .page {
   font-size: 0.6875rem;
-  color: oklch(60% 0.01 80);
+  color: var(--color-ink-3);
   flex-shrink: 0;
   padding-top: 0.125rem;
 }
 
-.section-text { color: oklch(20% 0.01 80); }
+.section-text { color: var(--color-ink); }
 
 .no-span {
-  margin: 1rem;
-  padding: 0.75rem 1rem;
-  background: oklch(96% 0.03 25);
-  border: 1px solid oklch(85% 0.06 25);
-  border-radius: 8px;
+  margin: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--chip-unsupported-bg);
+  border: 1px solid var(--chip-unsupported-border);
+  border-radius: var(--radius-sm);
   font-size: 0.8125rem;
-  color: oklch(38% 0.16 25);
+  color: var(--chip-unsupported-text);
 }
 </style>
