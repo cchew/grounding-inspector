@@ -1,38 +1,101 @@
 {
   "fixture_id": "budgetdirect-pds-01",
   "source": {
-    "title": "Budget Direct Travel Insurance — Combined FSG and PDS (International Comprehensive, effective 19 February 2025)",
+    "title": "Budget Direct Travel Insurance \u2014 Combined FSG and PDS (International Comprehensive, effective 19 February 2025)",
     "sections": [
-      { "id": "bd_3_wording", "page": 33, "char_start": 0, "char_end": 360,
-        "text": "If due to circumstances outside Your control and unforeseeable at the Relevant Time You have to cancel the Journey, We will pay You the value of the unused portion of Your prepaid travel and accommodation arrangements that are non-refundable and not recoverable in any other way, the travel agent's commission (limited to the lesser of $4,000 or the amount earned), and the value of frequent flyer or similar flight reward points lost by You." },
-      { "id": "bd_3_limit", "page": 33, "char_start": 0, "char_end": 120,
-        "text": "International Comprehensive cancellation benefit: $10,000 (default) or cover chosen as shown on Your Certificate of Insurance." },
-      { "id": "bd_3_excl_pandemic", "page": 33, "char_start": 0, "char_end": 155,
-        "text": "We will not pay for cancellation caused by: An Epidemic, Pandemic or outbreak of an infectious disease or any derivative or mutation of such viruses." },
-      { "id": "bd_3_excl_redundancy", "page": 33, "char_start": 0, "char_end": 270,
-        "text": "We will not pay for cancellation caused by: Any contractual or business obligation or Your financial situation. This exclusion does not apply to claims where You are involuntarily made redundant from Your permanent full-time or permanent part-time employment in Australia and where You would not have been aware before, or at the Relevant Time, that the redundancy was to occur." }
+      {
+        "id": "bd_3_wording",
+        "page": 33,
+        "char_start": 0,
+        "char_end": 360,
+        "text": "If due to circumstances outside Your control and unforeseeable at the Relevant Time You have to cancel the Journey, We will pay You the value of the unused portion of Your prepaid travel and accommodation arrangements that are non-refundable and not recoverable in any other way, the travel agent's commission (limited to the lesser of $4,000 or the amount earned), and the value of frequent flyer or similar flight reward points lost by You."
+      },
+      {
+        "id": "bd_3_limit",
+        "page": 33,
+        "char_start": 0,
+        "char_end": 120,
+        "text": "International Comprehensive cancellation benefit: $10,000 (default) or cover chosen as shown on Your Certificate of Insurance."
+      },
+      {
+        "id": "bd_3_excl_pandemic",
+        "page": 33,
+        "char_start": 0,
+        "char_end": 155,
+        "text": "We will not pay for cancellation caused by: An Epidemic, Pandemic or outbreak of an infectious disease or any derivative or mutation of such viruses."
+      },
+      {
+        "id": "bd_3_excl_redundancy",
+        "page": 33,
+        "char_start": 0,
+        "char_end": 270,
+        "text": "We will not pay for cancellation caused by: Any contractual or business obligation or Your financial situation. This exclusion does not apply to claims where You are involuntarily made redundant from Your permanent full-time or permanent part-time employment in Australia and where You would not have been aware before, or at the Relevant Time, that the redundancy was to occur."
+      }
     ]
   },
-  "ai_output": "Budget Direct Comprehensive covers trip cancellation up to $10,000 by default. If you lose your job, cancellation is covered — whether the redundancy was your choice or forced upon you. The policy also covers cancellations caused by COVID-19 and other pandemic events on the same basis as any other unexpected event. You can increase your cancellation limit above $10,000 by selecting higher cover when you purchase.",
+  "ai_output": "Budget Direct Comprehensive covers trip cancellation up to $10,000 by default. If you lose your job, cancellation is covered \u2014 whether the redundancy was your choice or forced upon you. The policy also covers cancellations caused by COVID-19 and other pandemic events on the same basis as any other unexpected event. You can increase your cancellation limit above $10,000 by selecting higher cover when you purchase.",
   "claims": [
-    { "id": "c1", "text": "Budget Direct Comprehensive covers trip cancellation up to $10,000 by default.",
-      "label": "grounded", "evidence_span_ids": ["bd_3_limit"], "quote": "$10,000 (default) or cover chosen", "page": 33,
-      "rationale": "Section bd_3_limit states exactly a $10,000 default cancellation limit for International Comprehensive." },
-    { "id": "c2", "text": "If you lose your job, cancellation is covered — whether the redundancy was your choice or forced upon you.",
-      "label": "partial", "evidence_span_ids": ["bd_3_excl_redundancy"], "quote": "involuntarily made redundant", "page": 33,
-      "rationale": "Cancellation for job loss is covered, but only for involuntary redundancy — the exclusion explicitly does not carve out voluntary redundancy. Covering voluntary redundancy is not supported." },
-    { "id": "c3", "text": "The policy covers cancellations caused by COVID-19 and other pandemic events on the same basis as any other unexpected event.",
-      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
-      "rationale": "Section bd_3_excl_pandemic explicitly excludes cancellation caused by an Epidemic, Pandemic or outbreak of an infectious disease. COVID-19 and pandemic events are specifically excluded, not treated as ordinary unexpected events." },
-    { "id": "c4", "text": "You can increase your cancellation limit above $10,000 by selecting higher cover when you purchase.",
-      "label": "grounded", "evidence_span_ids": ["bd_3_limit"], "quote": "or cover chosen as shown on Your Certificate of Insurance", "page": 33,
-      "rationale": "The PDS confirms the limit is $10,000 or a higher amount chosen by the policyholder, shown on the certificate." }
+    {
+      "id": "c1",
+      "text": "Budget Direct Comprehensive covers trip cancellation up to $10,000 by default.",
+      "label": "grounded",
+      "evidence_span_ids": [
+        "bd_3_limit"
+      ],
+      "quote": "$10,000 (default) or cover chosen",
+      "page": 33,
+      "rationale": "Section bd_3_limit states exactly a $10,000 default cancellation limit for International Comprehensive."
+    },
+    {
+      "id": "c2",
+      "text": "If you lose your job, cancellation is covered \u2014 whether the redundancy was your choice or forced upon you.",
+      "label": "partial",
+      "evidence_span_ids": [
+        "bd_3_excl_redundancy"
+      ],
+      "quote": "involuntarily made redundant",
+      "page": 33,
+      "rationale": "Cancellation for job loss is covered, but only for involuntary redundancy \u2014 the exclusion explicitly does not carve out voluntary redundancy. Covering voluntary redundancy is not supported."
+    },
+    {
+      "id": "c3",
+      "text": "The policy covers cancellations caused by COVID-19 and other pandemic events on the same basis as any other unexpected event.",
+      "label": "unsupported",
+      "evidence_span_ids": [],
+      "quote": null,
+      "page": null,
+      "rationale": "Section bd_3_excl_pandemic explicitly excludes cancellation caused by an Epidemic, Pandemic or outbreak of an infectious disease. COVID-19 and pandemic events are specifically excluded, not treated as ordinary unexpected events."
+    },
+    {
+      "id": "c4",
+      "text": "You can increase your cancellation limit above $10,000 by selecting higher cover when you purchase.",
+      "label": "grounded",
+      "evidence_span_ids": [
+        "bd_3_limit"
+      ],
+      "quote": "or cover chosen as shown on Your Certificate of Insurance",
+      "page": 33,
+      "rationale": "The PDS confirms the limit is $10,000 or a higher amount chosen by the policyholder, shown on the certificate."
+    }
   ],
-  "groundedness": { "score": 63, "n_grounded": 2, "n_partial": 1, "n_unsupported": 1 },
+  "groundedness": {
+    "score": 63,
+    "n_grounded": 2,
+    "n_partial": 1,
+    "n_unsupported": 1
+  },
   "scorecard": {
-    "recall": 0.0, "recall_ci": [0.0, 0.0], "false_negatives": 0, "n_positive": 0,
-    "citation_precision": null, "cohen_kappa": null,
-    "validated_on": "placeholder — replaced by engine in Phase 3",
+    "recall": 0.69,
+    "recall_ci": [
+      0.59,
+      0.779
+    ],
+    "false_negatives": 31,
+    "n_positive": 100,
+    "balanced_accuracy": 0.612,
+    "citation_precision": null,
+    "cohen_kappa": 0.195,
+    "validated_on": "RAGTruth (sampled, n=300, seed=0)",
     "domain_note": "benchmark distribution; NOT measured on PDS"
   }
 }

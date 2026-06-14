@@ -1,41 +1,110 @@
 {
   "fixture_id": "covermore-pds-01",
   "source": {
-    "title": "Cover-More Travel Insurance — Combined FSG and PDS (Comprehensive Plan, effective 15 October 2025)",
+    "title": "Cover-More Travel Insurance \u2014 Combined FSG and PDS (Comprehensive Plan, effective 15 October 2025)",
     "sections": [
-      { "id": "cov_5_table", "page": 3, "char_start": 0, "char_end": 420,
-        "text": "International Benefits Table — Luggage and Travel Documents (Comprehensive Plan): Total limit $15,000. Per-item limits: Phone or Smart Watch $1,500; Camera or Video Camera $4,000; Laptop Computer $4,000; Tablet Computer $3,000; Drone $1,200; Jewellery, watch or any other item $1,200; Delayed Luggage Allowance $1,100." },
-      { "id": "cov_5_wording", "page": 35, "char_start": 0, "char_end": 380,
-        "text": "If during the Period of Insurance Your luggage or personal effects are lost, stolen or damaged, after deducting depreciation We will repair the item if it is practical and economic to do so. If it is not practical and economic to repair the item, We will replace the item or provide You with a replacement voucher. If the above do not apply, We will pay You the monetary value of the item." },
-      { "id": "cov_5_excl_vehicle", "page": 35, "char_start": 0, "char_end": 280,
-        "text": "We will not pay for: Items left Unattended in any motor vehicle or towed land vehicle overnight even if they were in a Concealed Storage Compartment. Any amount exceeding $500 per item and $2,000 in total for all items left Unattended in any motor vehicle or towed land vehicle." },
-      { "id": "cov_5_excl_public", "page": 35, "char_start": 0, "char_end": 140,
-        "text": "We will not pay for: Items left Unattended in a Public Place. Valuables placed in checked baggage with a Transport Provider." }
+      {
+        "id": "cov_5_table",
+        "page": 3,
+        "char_start": 0,
+        "char_end": 420,
+        "text": "International Benefits Table \u2014 Luggage and Travel Documents (Comprehensive Plan): Total limit $15,000. Per-item limits: Phone or Smart Watch $1,500; Camera or Video Camera $4,000; Laptop Computer $4,000; Tablet Computer $3,000; Drone $1,200; Jewellery, watch or any other item $1,200; Delayed Luggage Allowance $1,100."
+      },
+      {
+        "id": "cov_5_wording",
+        "page": 35,
+        "char_start": 0,
+        "char_end": 380,
+        "text": "If during the Period of Insurance Your luggage or personal effects are lost, stolen or damaged, after deducting depreciation We will repair the item if it is practical and economic to do so. If it is not practical and economic to repair the item, We will replace the item or provide You with a replacement voucher. If the above do not apply, We will pay You the monetary value of the item."
+      },
+      {
+        "id": "cov_5_excl_vehicle",
+        "page": 35,
+        "char_start": 0,
+        "char_end": 280,
+        "text": "We will not pay for: Items left Unattended in any motor vehicle or towed land vehicle overnight even if they were in a Concealed Storage Compartment. Any amount exceeding $500 per item and $2,000 in total for all items left Unattended in any motor vehicle or towed land vehicle."
+      },
+      {
+        "id": "cov_5_excl_public",
+        "page": 35,
+        "char_start": 0,
+        "char_end": 140,
+        "text": "We will not pay for: Items left Unattended in a Public Place. Valuables placed in checked baggage with a Transport Provider."
+      }
     ]
   },
-  "ai_output": "Cover-More Comprehensive covers your belongings up to $20,000 in total — plenty of protection for a fully loaded trip. Each laptop is covered for up to $5,000 and cameras for up to $4,000, making it ideal for content creators. Jewellery and watches are covered up to $2,000 per item. Importantly, items locked in your car boot overnight are fully covered — there are no restrictions on vehicle storage.",
+  "ai_output": "Cover-More Comprehensive covers your belongings up to $20,000 in total \u2014 plenty of protection for a fully loaded trip. Each laptop is covered for up to $5,000 and cameras for up to $4,000, making it ideal for content creators. Jewellery and watches are covered up to $2,000 per item. Importantly, items locked in your car boot overnight are fully covered \u2014 there are no restrictions on vehicle storage.",
   "claims": [
-    { "id": "c1", "text": "Cover-More Comprehensive covers your belongings up to $20,000 in total.",
-      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
-      "rationale": "The Comprehensive Plan total luggage limit is $15,000, not $20,000. No figure of $20,000 appears in the PDS." },
-    { "id": "c2", "text": "Each laptop is covered for up to $5,000.",
-      "label": "partial", "evidence_span_ids": ["cov_5_table"], "quote": "Laptop Computer $4,000", "page": 3,
-      "rationale": "Laptops are covered, but the per-item limit is $4,000, not $5,000. The claim overstates by $1,000." },
-    { "id": "c3", "text": "Cameras are covered for up to $4,000.",
-      "label": "grounded", "evidence_span_ids": ["cov_5_table"], "quote": "Camera or Video Camera $4,000", "page": 3,
-      "rationale": "The benefits table states exactly $4,000 per item for Camera or Video Camera." },
-    { "id": "c4", "text": "Jewellery and watches are covered up to $2,000 per item.",
-      "label": "partial", "evidence_span_ids": ["cov_5_table"], "quote": "Jewellery, watch or any other item $1,200", "page": 3,
-      "rationale": "Jewellery and watches are covered, but the per-item limit is $1,200, not $2,000. The claim overstates by $800." },
-    { "id": "c5", "text": "Items locked in your car boot overnight are fully covered — there are no restrictions on vehicle storage.",
-      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
-      "rationale": "Section cov_5_excl_vehicle explicitly excludes items left unattended in any motor vehicle overnight, even in a concealed storage compartment. This is the opposite of what the claim asserts." }
+    {
+      "id": "c1",
+      "text": "Cover-More Comprehensive covers your belongings up to $20,000 in total.",
+      "label": "unsupported",
+      "evidence_span_ids": [],
+      "quote": null,
+      "page": null,
+      "rationale": "The Comprehensive Plan total luggage limit is $15,000, not $20,000. No figure of $20,000 appears in the PDS."
+    },
+    {
+      "id": "c2",
+      "text": "Each laptop is covered for up to $5,000.",
+      "label": "partial",
+      "evidence_span_ids": [
+        "cov_5_table"
+      ],
+      "quote": "Laptop Computer $4,000",
+      "page": 3,
+      "rationale": "Laptops are covered, but the per-item limit is $4,000, not $5,000. The claim overstates by $1,000."
+    },
+    {
+      "id": "c3",
+      "text": "Cameras are covered for up to $4,000.",
+      "label": "grounded",
+      "evidence_span_ids": [
+        "cov_5_table"
+      ],
+      "quote": "Camera or Video Camera $4,000",
+      "page": 3,
+      "rationale": "The benefits table states exactly $4,000 per item for Camera or Video Camera."
+    },
+    {
+      "id": "c4",
+      "text": "Jewellery and watches are covered up to $2,000 per item.",
+      "label": "partial",
+      "evidence_span_ids": [
+        "cov_5_table"
+      ],
+      "quote": "Jewellery, watch or any other item $1,200",
+      "page": 3,
+      "rationale": "Jewellery and watches are covered, but the per-item limit is $1,200, not $2,000. The claim overstates by $800."
+    },
+    {
+      "id": "c5",
+      "text": "Items locked in your car boot overnight are fully covered \u2014 there are no restrictions on vehicle storage.",
+      "label": "unsupported",
+      "evidence_span_ids": [],
+      "quote": null,
+      "page": null,
+      "rationale": "Section cov_5_excl_vehicle explicitly excludes items left unattended in any motor vehicle overnight, even in a concealed storage compartment. This is the opposite of what the claim asserts."
+    }
   ],
-  "groundedness": { "score": 40, "n_grounded": 1, "n_partial": 2, "n_unsupported": 2 },
+  "groundedness": {
+    "score": 40,
+    "n_grounded": 1,
+    "n_partial": 2,
+    "n_unsupported": 2
+  },
   "scorecard": {
-    "recall": 0.0, "recall_ci": [0.0, 0.0], "false_negatives": 0, "n_positive": 0,
-    "citation_precision": null, "cohen_kappa": null,
-    "validated_on": "placeholder — replaced by engine in Phase 3",
+    "recall": 0.69,
+    "recall_ci": [
+      0.59,
+      0.779
+    ],
+    "false_negatives": 31,
+    "n_positive": 100,
+    "balanced_accuracy": 0.612,
+    "citation_precision": null,
+    "cohen_kappa": 0.195,
+    "validated_on": "RAGTruth (sampled, n=300, seed=0)",
     "domain_note": "benchmark distribution; NOT measured on PDS"
   }
 }

@@ -1,38 +1,101 @@
 {
   "fixture_id": "travel-pds-02",
   "source": {
-    "title": "SunSafe Travel Insurance — Product Disclosure Statement (synthetic)",
+    "title": "SunSafe Travel Insurance \u2014 Product Disclosure Statement (synthetic)",
     "sections": [
-      { "id": "s1", "page": 1, "char_start": 0, "char_end": 110,
-        "text": "SunSafe Travel Insurance PDS. This document sets out what is and is not covered." },
-      { "id": "s5_1", "page": 16, "char_start": 0, "char_end": 160,
-        "text": "Travel delay: if your scheduled departure is delayed by more than 6 hours due to a covered event, you may claim up to $200 per day to a maximum of $1,000." },
-      { "id": "s5_2", "page": 17, "char_start": 0, "char_end": 155,
-        "text": "Trip cancellation: we will reimburse non-refundable prepaid travel costs if you cancel for a covered reason, up to $10,000 per person." },
-      { "id": "s9", "page": 30, "char_start": 0, "char_end": 130,
-        "text": "Exclusions: claims arising from changes of mind, strike action known before booking, or financial collapse of a carrier are not covered." }
+      {
+        "id": "s1",
+        "page": 1,
+        "char_start": 0,
+        "char_end": 110,
+        "text": "SunSafe Travel Insurance PDS. This document sets out what is and is not covered."
+      },
+      {
+        "id": "s5_1",
+        "page": 16,
+        "char_start": 0,
+        "char_end": 160,
+        "text": "Travel delay: if your scheduled departure is delayed by more than 6 hours due to a covered event, you may claim up to $200 per day to a maximum of $1,000."
+      },
+      {
+        "id": "s5_2",
+        "page": 17,
+        "char_start": 0,
+        "char_end": 155,
+        "text": "Trip cancellation: we will reimburse non-refundable prepaid travel costs if you cancel for a covered reason, up to $10,000 per person."
+      },
+      {
+        "id": "s9",
+        "page": 30,
+        "char_start": 0,
+        "char_end": 130,
+        "text": "Exclusions: claims arising from changes of mind, strike action known before booking, or financial collapse of a carrier are not covered."
+      }
     ]
   },
   "ai_output": "If your flight is delayed, SunSafe covers up to $200 per day with no cap on the number of days. Trip cancellation is covered up to $10,000 per person for non-refundable costs. Strike action is always covered, regardless of when it was announced. The policy covers all travel delays, even those caused by the airline's own mechanical failures.",
   "claims": [
-    { "id": "c1", "text": "If your flight is delayed, SunSafe covers up to $200 per day with no cap on the number of days.",
-      "label": "partial", "evidence_span_ids": ["s5_1"], "quote": "up to $200 per day to a maximum of $1,000", "page": 16,
-      "rationale": "The $200/day rate is correct, but the claim omits the $1,000 total cap — implying unlimited daily cover." },
-    { "id": "c2", "text": "Trip cancellation is covered up to $10,000 per person for non-refundable costs.",
-      "label": "grounded", "evidence_span_ids": ["s5_2"], "quote": "up to $10,000 per person", "page": 17,
-      "rationale": "Section s5_2 states exactly this limit for non-refundable prepaid costs." },
-    { "id": "c3", "text": "Strike action is always covered, regardless of when it was announced.",
-      "label": "unsupported", "evidence_span_ids": [], "quote": null, "page": null,
-      "rationale": "Section s9 explicitly excludes strike action known before booking. The claim is the opposite of the policy." },
-    { "id": "c4", "text": "The policy covers all travel delays, even those caused by the airline's own mechanical failures.",
-      "label": "grounded", "evidence_span_ids": ["s5_1"], "quote": "delayed by more than 6 hours due to a covered event", "page": 16,
-      "rationale": "Mechanical failure is a covered event; the 6-hour threshold and daily cap apply but the type of cause is not excluded." }
+    {
+      "id": "c1",
+      "text": "If your flight is delayed, SunSafe covers up to $200 per day with no cap on the number of days.",
+      "label": "partial",
+      "evidence_span_ids": [
+        "s5_1"
+      ],
+      "quote": "up to $200 per day to a maximum of $1,000",
+      "page": 16,
+      "rationale": "The $200/day rate is correct, but the claim omits the $1,000 total cap \u2014 implying unlimited daily cover."
+    },
+    {
+      "id": "c2",
+      "text": "Trip cancellation is covered up to $10,000 per person for non-refundable costs.",
+      "label": "grounded",
+      "evidence_span_ids": [
+        "s5_2"
+      ],
+      "quote": "up to $10,000 per person",
+      "page": 17,
+      "rationale": "Section s5_2 states exactly this limit for non-refundable prepaid costs."
+    },
+    {
+      "id": "c3",
+      "text": "Strike action is always covered, regardless of when it was announced.",
+      "label": "unsupported",
+      "evidence_span_ids": [],
+      "quote": null,
+      "page": null,
+      "rationale": "Section s9 explicitly excludes strike action known before booking. The claim is the opposite of the policy."
+    },
+    {
+      "id": "c4",
+      "text": "The policy covers all travel delays, even those caused by the airline's own mechanical failures.",
+      "label": "grounded",
+      "evidence_span_ids": [
+        "s5_1"
+      ],
+      "quote": "delayed by more than 6 hours due to a covered event",
+      "page": 16,
+      "rationale": "Mechanical failure is a covered event; the 6-hour threshold and daily cap apply but the type of cause is not excluded."
+    }
   ],
-  "groundedness": { "score": 63, "n_grounded": 2, "n_partial": 1, "n_unsupported": 1 },
+  "groundedness": {
+    "score": 63,
+    "n_grounded": 2,
+    "n_partial": 1,
+    "n_unsupported": 1
+  },
   "scorecard": {
-    "recall": 0.0, "recall_ci": [0.0, 0.0], "false_negatives": 0, "n_positive": 0,
-    "citation_precision": null, "cohen_kappa": null,
-    "validated_on": "placeholder — replaced by engine in Phase 3",
+    "recall": 0.69,
+    "recall_ci": [
+      0.59,
+      0.779
+    ],
+    "false_negatives": 31,
+    "n_positive": 100,
+    "balanced_accuracy": 0.612,
+    "citation_precision": null,
+    "cohen_kappa": 0.195,
+    "validated_on": "RAGTruth (sampled, n=300, seed=0)",
     "domain_note": "benchmark distribution; NOT measured on PDS"
   }
 }
