@@ -70,6 +70,7 @@
         },
         "false_negatives": { "type": "integer", "minimum": 0 },
         "n_positive": { "type": "integer", "minimum": 0 },
+        "balanced_accuracy": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "citation_precision": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "cohen_kappa": { "type": ["number", "null"] },
         "validated_on": { "type": "string" },

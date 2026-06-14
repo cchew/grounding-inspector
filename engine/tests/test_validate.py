@@ -2,8 +2,9 @@
 from grounding.validate import map_ragtruth_label, summarise
 
 def test_label_mapping():
-    assert map_ragtruth_label({"labels": []}) == 0          # no hallucination span -> grounded(0)
-    assert map_ragtruth_label({"labels": [{"start": 1}]}) == 1  # has hallucination -> 1
+    assert map_ragtruth_label({"hallucination_labels": "[]"}) == 0
+    assert map_ragtruth_label({"hallucination_labels": '[{"start": 1}]'}) == 1
+    assert map_ragtruth_label({}) == 0  # missing field -> grounded
 
 def test_summarise_computes_recall_and_kappa():
     gold = [1, 1, 0, 0, 1]

@@ -11,7 +11,7 @@ import json
 import pathlib
 
 from grounding.decompose import build_client, decompose_output
-from grounding.verify import build_scorer
+from grounding.verify import build_scorer, make_minicheck_verifier
 from grounding.pipeline import label_claims
 from grounding.fixturegen import build_fixture
 
@@ -41,8 +41,9 @@ SCORECARD_PLACEHOLDER = {
 
 
 def run():
-    client = build_client()   # ollama
-    scorer = build_scorer()   # MiniCheck flan-t5-large
+    client = build_client()
+    scorer = build_scorer()
+    verifier_fn = make_minicheck_verifier(scorer)
 
     for fid, paths in SOURCES.items():
         existing = json.loads(paths["source_file"].read_text())
@@ -65,7 +66,7 @@ def run():
 
         # Verify claims
         print(f"[{fid}] verifying {len(decomposed)} claims...")
-        claims = label_claims(decomposed, full_text, sections, scorer)
+        claims = label_claims(decomposed, full_text, sections, verifier_fn)
 
         # Build and write fixture
         fx = build_fixture(fid, source, ai_output, claims, SCORECARD_PLACEHOLDER)

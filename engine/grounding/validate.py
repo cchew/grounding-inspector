@@ -1,10 +1,16 @@
+import json as _json
 from sklearn.metrics import balanced_accuracy_score, cohen_kappa_score
 from grounding.metrics import recall_with_ci
 
 
 def map_ragtruth_label(example: dict) -> int:
-    """1 = contains hallucination (positive/ungrounded), 0 = grounded."""
-    return 1 if example.get("labels") else 0
+    """1 = contains hallucination (positive/ungrounded), 0 = grounded.
+    RAGTruth field: hallucination_labels — a JSON-encoded list of span dicts."""
+    raw = example.get("hallucination_labels", "[]")
+    try:
+        return 1 if _json.loads(raw) else 0
+    except (_json.JSONDecodeError, TypeError):
+        return 0
 
 
 def summarise(gold: list[int], pred: list[int]) -> dict:
@@ -19,16 +25,47 @@ def summarise(gold: list[int], pred: list[int]) -> dict:
     }
 
 
-def run_sample(n: int = 300, seed: int = 0):
-    """Integration: load a stratified RAGTruth sample, run verify over each,
-    return summarise(gold, pred). Kept thin; called from the notebook."""
+def run_sample(
+    n: int = 300,
+    seed: int = 0,
+    decompose_model: str = "qwen2.5:7b-instruct",
+    verifier: str = "minicheck",
+):
+    """Run the full decompose->verify pipeline on a RAGTruth sample.
+
+    verifier: "minicheck" (local, default) | "haiku" (Claude Haiku, requires ANTHROPIC_API_KEY)
+    """
     from datasets import load_dataset
-    from grounding.verify import build_scorer, verify_subclaim, chunk_document
+    from grounding.verify import chunk_document, make_minicheck_verifier, make_claude_verifier
+    from grounding.decompose import decompose_output, build_client, decompose_output_claude, build_claude_client
+
     ds = load_dataset("wandb/RAGTruth-processed", split="test").shuffle(seed=seed).select(range(n))
-    scorer = build_scorer()
+
+    if verifier == "minicheck":
+        from grounding.verify import build_scorer
+        scorer = build_scorer()
+        verify_fn = make_minicheck_verifier(scorer)
+        ollama_client = build_client()
+        _model = decompose_model
+        decompose_fn = lambda text: decompose_output(text, ollama_client, _model)
+    elif verifier == "haiku":
+        claude_client = build_claude_client()
+        verify_fn = make_claude_verifier()
+        decompose_fn = lambda text: decompose_output_claude(text, claude_client)
+    else:
+        raise ValueError(f"Unknown verifier '{verifier}'. Choose 'minicheck' or 'haiku'.")
+
     gold, pred = [], []
     for ex in ds:
         gold.append(map_ragtruth_label(ex))
-        supported, _ = verify_subclaim(ex["response"], chunk_document(ex["prompt"]), scorer)
-        pred.append(0 if supported else 1)  # unsupported -> hallucination(1)
+        chunks = chunk_document(ex["context"])
+        try:
+            claims = decompose_fn(ex["output"])
+            subclaims = [sc for c in claims for sc in c["subclaims"]]
+            if not subclaims:
+                subclaims = [ex["output"]]
+            supported = [verify_fn(sc, chunks) for sc in subclaims]
+            pred.append(0 if all(supported) else 1)
+        except (ValueError, KeyError):
+            pred.append(0)
     return summarise(gold, pred)

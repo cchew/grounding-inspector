@@ -3,12 +3,16 @@ from grounding.labelling import aggregate_label
 from grounding.localise import best_span
 
 
-def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], scorer) -> list[dict]:
-    """Wire decompose -> verify (per sub-claim, full-doc) -> aggregate_label -> localise -> claim record."""
+def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], verifier_fn) -> list[dict]:
+    """Wire decompose -> verify -> aggregate_label -> localise -> claim record.
+
+    verifier_fn: callable(subclaim: str, chunks: list[str]) -> bool
+    Use make_minicheck_verifier() or make_claude_verifier() from grounding.verify.
+    """
     chunks = chunk_document(full_text)
     out = []
     for i, dc in enumerate(decomposed):
-        supported = [verify_subclaim(sc, chunks, scorer)[0] for sc in dc["subclaims"]]
+        supported = [verifier_fn(sc, chunks) for sc in dc["subclaims"]]
         label = aggregate_label(supported)
         span = None if label == "unsupported" else best_span(dc["text"], sections)
         out.append({
