@@ -84,8 +84,8 @@ async function navigateTo(page: import("@playwright/test").Page, id: FixtureId) 
 // API
 // ---------------------------------------------------------------------------
 test.describe("API", () => {
-  test("fixture list returns all 5 IDs", async ({ request }) => {
-    const res = await request.get("/api/fixtures");
+  test("fixture index lists all 5 IDs", async ({ request }) => {
+    const res = await request.get("/fixtures/index.json");
     expect(res.ok()).toBe(true);
     const ids = await res.json();
     expect(ids).toHaveLength(5);
@@ -95,8 +95,8 @@ test.describe("API", () => {
   });
 
   for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
-    test(`fixture/${id} has correct claim count and labels`, async ({ request }) => {
-      const res = await request.get(`/api/fixtures/${id}`);
+    test(`fixtures/${id}.json has correct claim count and labels`, async ({ request }) => {
+      const res = await request.get(`/fixtures/${id}.json`);
       expect(res.ok()).toBe(true);
       const body = await res.json();
       expect(body.fixture_id).toBe(id);
@@ -111,13 +111,13 @@ test.describe("API", () => {
   }
 
   test("unknown fixture returns 404", async ({ request }) => {
-    const res = await request.get("/api/fixtures/nonexistent");
+    const res = await request.get("/fixtures/nonexistent.json");
     expect(res.status()).toBe(404);
   });
 
   test("scorecard recall is 0.69 on all fixtures", async ({ request }) => {
     for (const id of Object.keys(FIXTURES)) {
-      const res = await request.get(`/api/fixtures/${id}`);
+      const res = await request.get(`/fixtures/${id}.json`);
       const body = await res.json();
       expect(body.scorecard.recall, id).toBeCloseTo(0.69, 2);
     }
@@ -133,9 +133,9 @@ test.describe("Page shell", () => {
     await expect(page.locator("h1")).toContainText("Grounding Inspector");
   });
 
-  test("subtitle contains Layer-3", async ({ page }) => {
+  test("subtitle describes claim grounding purpose", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".subtitle")).toContainText("Layer-3");
+    await expect(page.locator(".subtitle")).toContainText("claims are backed by document evidence");
   });
 
   test("all 5 fixture nav buttons are present", async ({ page }) => {
@@ -153,6 +153,7 @@ test.describe("Page shell", () => {
     await page.waitForSelector('[data-testid="output-panel"]', { timeout: 8000 });
     await expect(page.locator('[data-testid="output-panel"]')).toContainText("OUTPUT");
     await expect(page.locator('[data-testid="detector-panel"]')).toContainText("DETECTOR");
+    await expect(page.locator('[data-testid="detector-panel"]')).toContainText("benchmark performance");
   });
 });
 
@@ -178,11 +179,12 @@ test.describe("Fixture switching", () => {
       await expect(page.locator('[data-testid="output-panel"]')).toContainText(`${fx.score}/100`);
     });
 
-    test(`${id}: DETECTOR panel shows recall 0.69`, async ({ page }) => {
+    test(`${id}: DETECTOR accordion shows recall 0.69 when opened`, async ({ page }) => {
       await page.goto("/");
       await page.waitForSelector(".fixture-btn", { timeout: 5000 });
       await navigateTo(page, id);
-      await expect(page.locator('[data-testid="detector-panel"]')).toContainText("recall 0.69");
+      await page.locator('[data-testid="detector-panel"]').click();
+      await expect(page.locator('[data-testid="detector-body"]')).toContainText("0.69");
     });
   }
 });

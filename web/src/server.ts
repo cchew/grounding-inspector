@@ -37,6 +37,29 @@ app.get("/api/fixtures/:id", async (c) => {
   }
 });
 
+// Static-mode compatibility: serve fixtures at /fixtures/ for Netlify parity
+app.get("/fixtures/index.json", async (c) => {
+  try {
+    const files = await readdir(fixturesDir);
+    const ids = files.filter((f) => f.endsWith(".json")).map((f) => f.replace(".json", "")).sort();
+    return c.json(ids);
+  } catch {
+    return c.json([], 200);
+  }
+});
+
+app.get("/fixtures/:id{[\\w-]+\\.json}", async (c) => {
+  const id = c.req.param("id").replace(".json", "");
+  if (!/^[\w-]+$/.test(id)) return c.json({ error: "not found" }, 404);
+  try {
+    const raw = await readFile(join(fixturesDir, `${id}.json`), "utf8");
+    return c.json(JSON.parse(raw));
+  } catch (err: unknown) {
+    const isNotFound = (err as NodeJS.ErrnoException).code === "ENOENT";
+    return isNotFound ? c.json({ error: "not found" }, 404) : c.json({ error: "internal" }, 500);
+  }
+});
+
 app.get("/*", serveStatic({ root: join(here, "..", "dist") }));
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/copy-fixtures.mjs && vite",
     "serve": "tsx src/server.ts",
-    "build": "vue-tsc -b && vite build",
+    "build": "node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
     "test": "vitest run"
   },
   "dependencies": {

@@ -13,7 +13,7 @@ const fixture: Fixture = {
     { id: "c2", text: "medical covered", label: "grounded", evidence_span_ids: ["s4_2"], quote: "covered up to $10,000,000", page: 12, rationale: "r" },
   ],
   groundedness: { score: 50, n_grounded: 1, n_partial: 0, n_unsupported: 1 },
-  scorecard: { recall: 0, recall_ci: [0, 0], false_negatives: 0, n_positive: 0, citation_precision: null, cohen_kappa: null, validated_on: "x", domain_note: "y" },
+  scorecard: { recall: 0, recall_ci: [0, 0], false_negatives: 0, n_positive: 0, citation_precision: null, cohen_kappa: null, balanced_accuracy: null, validated_on: "x", domain_note: "y" },
 };
 
 describe("Inspector", () => {

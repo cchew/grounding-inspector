@@ -11,7 +11,7 @@ const loading = ref(false);
 
 onMounted(async () => {
   try {
-    const res = await fetch("/api/fixtures");
+    const res = await fetch("/fixtures/index.json");
     fixtureIds.value = await res.json();
     if (fixtureIds.value.length > 0) selectedId.value = fixtureIds.value[0] ?? null;
   } catch (e) {
@@ -25,7 +25,7 @@ watch(selectedId, async (id) => {
   fixture.value = null;
   error.value = null;
   try {
-    const res = await fetch(`/api/fixtures/${id}`);
+    const res = await fetch(`/fixtures/${id}.json`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     fixture.value = await res.json();
   } catch (e) {
@@ -52,7 +52,7 @@ function label(id: string): string {
     <header class="app-header">
       <div class="app-title">
         <h1>Grounding Inspector</h1>
-        <p class="subtitle">Layer-3 groundedness evaluation — LLM Security</p>
+        <p class="subtitle">Scoring whether AI claims are backed by document evidence</p>
       </div>
       <nav class="fixture-nav" v-if="fixtureIds.length">
         <button

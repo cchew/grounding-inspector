@@ -2,8 +2,8 @@
   /* Backgrounds */
   --color-bg: oklch(98% 0.005 80);
   --color-surface: oklch(100% 0 0);
-  --color-surface-hover: oklch(97% 0.005 80);
-  --color-surface-active: oklch(96% 0.01 80);
+  --color-surface-hover: oklch(95% 0.008 80);
+  --color-surface-active: oklch(92% 0.018 80);
   --color-surface-raised: oklch(96% 0.005 80);
 
   /* Text */

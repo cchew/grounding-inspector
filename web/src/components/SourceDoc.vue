@@ -12,14 +12,14 @@ watch(() => props.activeSpanIds, (ids) => {
 
 <template>
   <div class="source-doc" ref="root">
+    <div v-show="noSpan" data-testid="no-span" class="no-span">
+      No matching span found in source.
+    </div>
     <p v-for="s in sections" :key="s.id" :data-span="s.id"
        :class="['section', { 'span-active': activeSpanIds.includes(s.id) }]">
       <span class="page mono">p.{{ s.page }}</span>
       <span class="section-text">{{ s.text }}</span>
     </p>
-    <div v-show="noSpan" data-testid="no-span" class="no-span">
-      No matching span found in source.
-    </div>
   </div>
 </template>
 

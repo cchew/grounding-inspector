@@ -2,6 +2,18 @@
 import type { Claim } from "../types";
 defineProps<{ claims: Claim[]; activeId: string | null }>();
 defineEmits<{ select: [claim: Claim] }>();
+
+const LABEL_ICONS: Record<string, string> = {
+  grounded: "✓",
+  partial: "~",
+  unsupported: "✗",
+};
+
+const LABEL_TIPS: Record<string, string> = {
+  grounded: "Supported by source text",
+  partial: "Related to source but contains errors, omissions, or misrepresented detail",
+  unsupported: "No supporting evidence found in source document",
+};
 </script>
 
 <template>
@@ -10,7 +22,9 @@ defineEmits<{ select: [claim: Claim] }>();
         :class="['claim', `label-${c.label}`, { active: c.id === activeId }]"
         @click="$emit('select', c)">
       <span class="claim-text">{{ c.text }}</span>
-      <span :class="['label-badge', c.label]">{{ c.label }}</span>
+      <span :class="['label-badge', c.label]" :title="LABEL_TIPS[c.label]">
+        {{ LABEL_ICONS[c.label] }} {{ c.label }}
+      </span>
     </li>
   </ul>
 </template>
@@ -30,7 +44,11 @@ defineEmits<{ select: [claim: Claim] }>();
 }
 
 .claim:hover { background: var(--color-surface-hover); }
-.claim.active { background: var(--color-surface-active); }
+
+.claim.active {
+  background: var(--color-surface-active);
+  border-left-width: 4px;
+}
 
 .claim.label-grounded    { border-left-color: var(--chip-grounded-text); }
 .claim.label-partial     { border-left-color: var(--chip-partial-text); }
@@ -54,23 +72,12 @@ defineEmits<{ select: [claim: Claim] }>();
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 0.125rem;
+  white-space: nowrap;
 }
 
-.label-badge.grounded {
-  background: var(--chip-grounded-bg);
-  color: var(--chip-grounded-text);
-  border-color: var(--chip-grounded-border);
-}
-.label-badge.partial {
-  background: var(--chip-partial-bg);
-  color: var(--chip-partial-text);
-  border-color: var(--chip-partial-border);
-}
-.label-badge.unsupported {
-  background: var(--chip-unsupported-bg);
-  color: var(--chip-unsupported-text);
-  border-color: var(--chip-unsupported-border);
-}
+.label-badge.grounded    { background: var(--chip-grounded-bg);    color: var(--chip-grounded-text);    border-color: var(--chip-grounded-border); }
+.label-badge.partial     { background: var(--chip-partial-bg);     color: var(--chip-partial-text);     border-color: var(--chip-partial-border); }
+.label-badge.unsupported { background: var(--chip-unsupported-bg); color: var(--chip-unsupported-text); border-color: var(--chip-unsupported-border); }
 
 .claim + .claim { border-top: 1px solid var(--color-border-light); }
 </style>
