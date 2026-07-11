@@ -62,7 +62,7 @@
       ],
       "quote": "up to $500 for counselling services",
       "page": 9,
-      "rationale": "The limit is $500 (not $1,000) and is restricted to counselling (not all mental health treatment)."
+      "rationale": "Claim states $1,000; this figure does not appear in the matched evidence (automated numeric check)."
     },
     {
       "id": "c3",
@@ -112,6 +112,9 @@
     "citation_precision": null,
     "cohen_kappa": 0.195,
     "validated_on": "RAGTruth (sampled, n=300, seed=0)",
-    "domain_note": "benchmark distribution; NOT measured on PDS"
+    "domain_note": "benchmark distribution; NOT measured on PDS",
+    "pipeline_commit": "1814f83",
+    "verifier_model": "flan-t5-large",
+    "source_sha256": "258ecd8a8dad3fc089ad81d08beae589f0e906c004a476c6e49c456b77969b82"
   }
 }
