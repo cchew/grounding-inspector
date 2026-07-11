@@ -9,6 +9,8 @@ const active = ref<Claim | null>(null);
 const detectorOpen = ref(false);
 const activeSpanIds = computed(() => active.value?.evidence_span_ids ?? []);
 const noSpan = computed(() => !!active.value && active.value.evidence_span_ids.length === 0);
+const activeLabel = computed(() => active.value?.label ?? null);
+const activeRationale = computed(() => active.value?.rationale ?? "");
 const g = computed(() => props.fixture.groundedness);
 const sc = computed(() => props.fixture.scorecard);
 const claimCount = computed(() => props.fixture.claims.length);
@@ -84,7 +86,13 @@ const claimCount = computed(() => props.fixture.claims.length);
       <section class="pane pane-source">
         <h2 class="pane-heading">Source Document</h2>
         <p class="source-title">{{ fixture.source.title }}</p>
-        <SourceDoc :sections="fixture.source.sections" :active-span-ids="activeSpanIds" :no-span="noSpan" />
+        <SourceDoc
+          :sections="fixture.source.sections"
+          :active-span-ids="activeSpanIds"
+          :no-span="noSpan"
+          :active-label="activeLabel"
+          :active-rationale="activeRationale"
+        />
       </section>
 
     </div>
