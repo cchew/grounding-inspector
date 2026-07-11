@@ -7,7 +7,7 @@ Built as a proof-of-concept in the travel insurance domain (Australian PDS docum
 ## What it does
 
 1. **Decompose** — break an AI output into individual atomic claims
-2. **Verify** — score each claim against all document chunks using MiniCheck (no retrieval gate; max-pool over the full document)
+2. **Verify** — score each claim against all document chunks using MiniCheck (no retrieval gate; max-pool over the full document). This trades higher cost/latency at longer document lengths for exhaustive recall (no chunk is skipped by a retrieval step) — validated on short-to-medium documents (PDS-length, a few pages); a 100+ page document would need a retrieval pre-filter, which is not yet built or benchmarked.
 3. **Label** — aggregate sub-claim scores into `grounded`, `partial`, or `unsupported`
 4. **Localise** — map grounded claims back to the source span and page number
 5. **Inspect** — browse results in a Vue 3 two-pane viewer (claim list left, source doc right, click-to-highlight)
@@ -82,6 +82,12 @@ The pipeline supports two verifier backends, selectable at runtime:
 |------|----------|------------|------|--------|---|
 | `minicheck` (default) | MiniCheck flan-t5-large (local) | Ollama qwen2.5:7b-instruct | free | 0.69 | 0.195 |
 | `haiku` | Claude Haiku 4.5 (API) | Claude Haiku 4.5 (API) | ~$0.03/doc | 0.90 | 0.331 |
+
+κ (Cohen's kappa) measures agreement with human judgment beyond chance:
+0.195 is "slight agreement" and 0.331 is "fair agreement" per the standard
+Landis & Koch scale. Recall is the metric this tool prioritises, since a
+missed hallucination (false negative) is costlier than a false alarm for
+this tool's intended use.
 
 Both validated on RAGTruth n=300, seed=0.
 
