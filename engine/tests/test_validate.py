@@ -14,3 +14,27 @@ def test_summarise_computes_recall_and_kappa():
     assert m["n_positive"] == 3
     assert 0.0 <= m["recall"] <= 1.0
     assert "recall_ci" in m and "cohen_kappa" in m and "balanced_accuracy" in m
+
+def test_summarise_accepts_and_the_run_sample_loop_counts_parse_failures():
+    # run_sample requires network/model access, so this test exercises the
+    # extracted counting logic directly rather than the full function.
+    from grounding.validate import count_and_score
+
+    gold = [1, 0, 1]
+
+    def decompose_fn(text):
+        if text == "bad":
+            raise ValueError("could not parse")
+        return [{"text": text, "subclaims": [text]}]
+
+    def verify_fn(subclaim, chunks):
+        return True
+
+    examples = [
+        {"output": "ok1", "context": "doc"},
+        {"output": "bad", "context": "doc"},
+        {"output": "ok2", "context": "doc"},
+    ]
+    pred, n_failures = count_and_score(examples, decompose_fn, verify_fn)
+    assert n_failures == 1
+    assert len(pred) == 3
