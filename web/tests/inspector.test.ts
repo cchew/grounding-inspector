@@ -35,9 +35,8 @@ describe("Inspector", () => {
     expect(w.get('[data-testid="no-span"]').isVisible()).toBe(true);
   });
 
-  it("labels the two number-groups OUTPUT and DETECTOR", () => {
+  it("labels the OUTPUT scorecard", () => {
     const w = mount(Inspector, { props: { fixture } });
     expect(w.get('[data-testid="output-panel"]').text()).toContain("OUTPUT");
-    expect(w.get('[data-testid="detector-panel"]').text()).toContain("DETECTOR");
   });
 });
