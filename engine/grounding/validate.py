@@ -1,6 +1,7 @@
 import json as _json
 from sklearn.metrics import balanced_accuracy_score, cohen_kappa_score
 from grounding.metrics import recall_with_ci
+from grounding.verify import chunk_document
 
 
 def map_ragtruth_label(example: dict) -> int:
@@ -25,6 +26,27 @@ def summarise(gold: list[int], pred: list[int]) -> dict:
     }
 
 
+def count_and_score(ds, decompose_fn, verify_fn) -> tuple[list[int], int]:
+    """Run decompose+verify over a dataset, returning predictions and a count
+    of examples that failed to parse (and were conservatively scored as
+    'grounded' -- see docstring note in run_sample)."""
+    pred = []
+    n_failures = 0
+    for ex in ds:
+        chunks = chunk_document(ex["context"])
+        try:
+            claims = decompose_fn(ex["output"])
+            subclaims = [sc for c in claims for sc in c["subclaims"]]
+            if not subclaims:
+                subclaims = [ex["output"]]
+            supported = [verify_fn(sc, chunks) for sc in subclaims]
+            pred.append(0 if all(supported) else 1)
+        except (ValueError, KeyError):
+            pred.append(0)
+            n_failures += 1
+    return pred, n_failures
+
+
 def run_sample(
     n: int = 300,
     seed: int = 0,
@@ -34,9 +56,15 @@ def run_sample(
     """Run the full decompose->verify pipeline on a RAGTruth sample.
 
     verifier: "minicheck" (local, default) | "haiku" (Claude Haiku, requires ANTHROPIC_API_KEY)
+
+    Note: examples whose decompose/verify step raises ValueError or KeyError
+    (e.g. malformed LLM JSON) are conservatively scored as 'grounded' (no
+    hallucination) rather than dropped -- this biases recall downward, not
+    upward, since it can only convert a true positive into a false negative,
+    never the reverse. The count is returned in n_parse_failures.
     """
     from datasets import load_dataset
-    from grounding.verify import chunk_document, make_minicheck_verifier, make_claude_verifier
+    from grounding.verify import make_minicheck_verifier, make_claude_verifier
     from grounding.decompose import decompose_output, build_client, decompose_output_claude, build_claude_client
 
     ds = load_dataset("wandb/RAGTruth-processed", split="test").shuffle(seed=seed).select(range(n))
@@ -55,17 +83,8 @@ def run_sample(
     else:
         raise ValueError(f"Unknown verifier '{verifier}'. Choose 'minicheck' or 'haiku'.")
 
-    gold, pred = [], []
-    for ex in ds:
-        gold.append(map_ragtruth_label(ex))
-        chunks = chunk_document(ex["context"])
-        try:
-            claims = decompose_fn(ex["output"])
-            subclaims = [sc for c in claims for sc in c["subclaims"]]
-            if not subclaims:
-                subclaims = [ex["output"]]
-            supported = [verify_fn(sc, chunks) for sc in subclaims]
-            pred.append(0 if all(supported) else 1)
-        except (ValueError, KeyError):
-            pred.append(0)
-    return summarise(gold, pred)
+    gold = [map_ragtruth_label(ex) for ex in ds]
+    pred, n_failures = count_and_score(ds, decompose_fn, verify_fn)
+    result = summarise(gold, pred)
+    result["n_parse_failures"] = n_failures
+    return result

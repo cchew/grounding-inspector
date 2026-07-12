@@ -6,11 +6,11 @@ import SourceDoc from "./SourceDoc.vue";
 
 const props = defineProps<{ fixture: Fixture }>();
 const active = ref<Claim | null>(null);
-const detectorOpen = ref(false);
 const activeSpanIds = computed(() => active.value?.evidence_span_ids ?? []);
 const noSpan = computed(() => !!active.value && active.value.evidence_span_ids.length === 0);
+const activeLabel = computed(() => active.value?.label ?? null);
+const activeRationale = computed(() => active.value?.rationale ?? "");
 const g = computed(() => props.fixture.groundedness);
-const sc = computed(() => props.fixture.scorecard);
 const claimCount = computed(() => props.fixture.claims.length);
 </script>
 
@@ -38,53 +38,28 @@ const claimCount = computed(() => props.fixture.claims.length);
     <!-- Two-pane -->
     <div class="two-pane">
 
-      <!-- Left: claims + detector accordion -->
-      <div class="left-stack">
-        <section class="pane pane-claims">
-          <h2 class="pane-heading">AI Output</h2>
-          <div class="label-legend">
-            <span class="legend-chip grounded">✓ grounded</span>
-            <span class="legend-chip partial">~ partial</span>
-            <span class="legend-chip unsupported">✗ unsupported</span>
-          </div>
-          <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="active = $event" />
-        </section>
-
-        <div class="detector-accordion">
-          <button data-testid="detector-panel" class="detector-toggle" @click="detectorOpen = !detectorOpen">
-            <span class="detector-toggle-label">DETECTOR</span>
-            <span class="detector-hint">benchmark performance</span>
-            <span class="toggle-icon">{{ detectorOpen ? '▴' : '▾' }}</span>
-          </button>
-          <div v-show="detectorOpen" data-testid="detector-body" class="detector-body">
-            <dl class="detector-stats">
-              <div class="stat-row">
-                <dt>recall</dt>
-                <dd class="mono">{{ sc.recall.toFixed(2) }} <span class="ci">(CI {{ sc.recall_ci[0].toFixed(2) }}–{{ sc.recall_ci[1].toFixed(2) }})</span></dd>
-              </div>
-              <div class="stat-row" v-if="sc.cohen_kappa !== null">
-                <dt>agreement (κ)</dt>
-                <dd class="mono">{{ sc.cohen_kappa.toFixed(3) }} <span class="ci">— slight agreement</span></dd>
-              </div>
-              <div class="stat-row" v-if="sc.balanced_accuracy !== null">
-                <dt>balanced accuracy</dt>
-                <dd class="mono">{{ sc.balanced_accuracy.toFixed(3) }}</dd>
-              </div>
-              <div class="stat-row">
-                <dt>validated on</dt>
-                <dd>{{ sc.validated_on }}</dd>
-              </div>
-            </dl>
-            <p class="detector-caveat">⚠ {{ sc.domain_note }}</p>
-          </div>
+      <!-- Left: claims -->
+      <section class="pane pane-claims">
+        <h2 class="pane-heading">AI Output</h2>
+        <div class="label-legend">
+          <span class="legend-chip grounded">✓ grounded</span>
+          <span class="legend-chip partial">~ partial</span>
+          <span class="legend-chip unsupported">✗ unsupported</span>
         </div>
-      </div>
+        <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="active = $event" />
+      </section>
 
       <!-- Right: source document -->
       <section class="pane pane-source">
         <h2 class="pane-heading">Source Document</h2>
         <p class="source-title">{{ fixture.source.title }}</p>
-        <SourceDoc :sections="fixture.source.sections" :active-span-ids="activeSpanIds" :no-span="noSpan" />
+        <SourceDoc
+          :sections="fixture.source.sections"
+          :active-span-ids="activeSpanIds"
+          :no-span="noSpan"
+          :active-label="activeLabel"
+          :active-rationale="activeRationale"
+        />
       </section>
 
     </div>
@@ -176,12 +151,6 @@ const claimCount = computed(() => props.fixture.claims.length);
   align-items: start;
 }
 
-.left-stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-}
-
 .pane {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -225,80 +194,5 @@ const claimCount = computed(() => props.fixture.claims.length);
   color: var(--color-ink-2);
   padding: var(--s-2) var(--s-4) 0;
   font-style: italic;
-}
-
-/* ── Detector accordion ── */
-.detector-accordion {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.detector-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  width: 100%;
-  padding: var(--s-3) var(--s-4);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  color: var(--color-ink-2);
-  font-family: var(--font-ui);
-  transition: background 0.12s var(--ease-spring);
-}
-.detector-toggle:hover { background: var(--color-surface-hover); }
-
-.detector-toggle-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-ink-3);
-}
-
-.detector-hint {
-  font-size: 0.75rem;
-  color: var(--color-ink-3);
-  flex: 1;
-}
-
-.toggle-icon {
-  font-size: 0.625rem;
-  color: var(--color-ink-3);
-}
-
-.detector-body {
-  padding: var(--s-3) var(--s-4) var(--s-4);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.detector-stats { display: flex; flex-direction: column; gap: var(--s-2); }
-
-.stat-row {
-  display: flex;
-  gap: var(--s-4);
-  font-size: 0.8125rem;
-}
-.stat-row dt {
-  color: var(--color-ink-2);
-  width: 9rem;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-}
-.stat-row dd { color: var(--color-ink); }
-.ci { color: var(--color-ink-3); font-size: 0.75rem; }
-
-.detector-caveat {
-  margin-top: var(--s-3);
-  font-size: 0.75rem;
-  color: var(--chip-partial-text);
-  background: var(--chip-partial-bg);
-  border: 1px solid var(--chip-partial-border);
-  border-radius: var(--radius-sm);
-  padding: var(--s-2) var(--s-3);
 }
 </style>

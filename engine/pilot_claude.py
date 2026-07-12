@@ -21,7 +21,9 @@ if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 20
     print(f"Running Claude Haiku verifier on n={n} RAGTruth examples...")
     result = run_sample(n=n, verifier="haiku")
-    out = f"/tmp/grounding_scorecard_claude_n{n}.json"
+    results_dir = Path(__file__).parent / "results"
+    results_dir.mkdir(exist_ok=True)
+    out = results_dir / f"grounding_scorecard_claude_n{n}.json"
     with open(out, "w") as f:
         json.dump(result, f, indent=2)
     print(f"\nWritten to {out}")

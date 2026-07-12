@@ -96,6 +96,9 @@
     "citation_precision": null,
     "cohen_kappa": 0.195,
     "validated_on": "RAGTruth (sampled, n=300, seed=0)",
-    "domain_note": "benchmark distribution; NOT measured on PDS"
+    "domain_note": "benchmark distribution; NOT measured on PDS",
+    "pipeline_commit": "1814f83",
+    "verifier_model": "flan-t5-large",
+    "source_sha256": "e335f8fe11471ec4dac11248dde3cd0e3615091fca051f69116730e1b66814a6"
   }
 }

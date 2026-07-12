@@ -12,7 +12,8 @@ CLAIMS = [
 ]
 SCORECARD = {"recall": 0.9, "recall_ci": [0.8, 0.96], "false_negatives": 2, "n_positive": 20,
              "citation_precision": None, "cohen_kappa": 0.7,
-             "validated_on": "RAGTruth (sampled, n=300)", "domain_note": "benchmark distribution; NOT measured on PDS"}
+             "validated_on": "RAGTruth (sampled, n=300)", "domain_note": "benchmark distribution; NOT measured on PDS",
+             "pipeline_commit": "abc1234", "verifier_model": "flan-t5-large", "source_sha256": "0" * 64}
 
 def test_build_fixture_is_schema_valid():
     fx = build_fixture("travel-pds-02", SOURCE, "ai text", CLAIMS, SCORECARD)

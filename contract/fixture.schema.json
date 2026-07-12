@@ -60,7 +60,7 @@
     },
     "scorecard": {
       "type": "object",
-      "required": ["recall", "recall_ci", "false_negatives", "n_positive", "validated_on", "domain_note"],
+      "required": ["recall", "recall_ci", "false_negatives", "n_positive", "validated_on", "domain_note", "pipeline_commit", "verifier_model", "source_sha256"],
       "additionalProperties": false,
       "properties": {
         "recall": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -74,7 +74,10 @@
         "citation_precision": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "cohen_kappa": { "type": ["number", "null"] },
         "validated_on": { "type": "string" },
-        "domain_note": { "type": "string" }
+        "domain_note": { "type": "string" },
+        "pipeline_commit": { "type": "string" },
+        "verifier_model": { "type": "string" },
+        "source_sha256": { "type": "string" }
       }
     }
   }

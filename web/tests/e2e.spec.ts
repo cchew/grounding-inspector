@@ -152,8 +152,37 @@ test.describe("Page shell", () => {
     await page.goto("/");
     await page.waitForSelector('[data-testid="output-panel"]', { timeout: 8000 });
     await expect(page.locator('[data-testid="output-panel"]')).toContainText("OUTPUT");
-    await expect(page.locator('[data-testid="detector-panel"]')).toContainText("DETECTOR");
-    await expect(page.locator('[data-testid="detector-panel"]')).toContainText("benchmark performance");
+    await expect(page.locator('[data-testid="help-button"]')).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Help modal
+// ---------------------------------------------------------------------------
+test.describe("Help modal", () => {
+  test("opens on help button click and closes on close button click", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector('[data-testid="help-button"]', { timeout: 8000 });
+    await expect(page.locator('[data-testid="help-modal"]')).not.toBeVisible();
+    await page.click('[data-testid="help-button"]');
+    await expect(page.locator('[data-testid="help-modal"]')).toBeVisible();
+    await page.click('[data-testid="help-close"]');
+    await expect(page.locator('[data-testid="help-modal"]')).not.toBeVisible();
+  });
+
+  test("verdict legend shows an example from the active fixture", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await navigateTo(page, "covermore-pds-01");
+    await page.click('[data-testid="help-button"]');
+    await expect(page.locator('[data-testid="help-modal"]')).toContainText("Cameras are covered for up to $4,000");
+  });
+
+  test("scope declaration is present", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector('[data-testid="help-button"]', { timeout: 8000 });
+    await page.click('[data-testid="help-button"]');
+    await expect(page.locator('[data-testid="scope-declaration"]')).toContainText("have not been verified as false");
   });
 });
 
@@ -179,12 +208,13 @@ test.describe("Fixture switching", () => {
       await expect(page.locator('[data-testid="output-panel"]')).toContainText(`${fx.score}/100`);
     });
 
-    test(`${id}: DETECTOR accordion shows recall 0.69 when opened`, async ({ page }) => {
+    test(`${id}: help modal shows recall 0.69 when opened`, async ({ page }) => {
       await page.goto("/");
       await page.waitForSelector(".fixture-btn", { timeout: 5000 });
       await navigateTo(page, id);
-      await page.locator('[data-testid="detector-panel"]').click();
-      await expect(page.locator('[data-testid="detector-body"]')).toContainText("0.69");
+      await page.click('[data-testid="help-button"]');
+      await expect(page.locator('[data-testid="verifier-table"]')).toContainText("0.69");
+      await page.click('[data-testid="help-close"]');
     });
   }
 });
@@ -221,7 +251,9 @@ test.describe("Span linking", () => {
         await navigateTo(page, id);
         await page.waitForSelector(`[data-span="${c.spans[0]}"]`, { timeout: 5000 });
         await page.click(`[data-claim="${c.id}"]`);
-        await expect(page.locator(`[data-span="${c.spans[0]}"]`)).toHaveClass(/span-active/);
+        await expect(page.locator(`[data-span="${c.spans[0]}"]`)).toHaveClass(
+          new RegExp(`span-active-${c.label}`)
+        );
         await expect(page.locator('[data-testid="no-span"]')).not.toBeVisible();
       });
     }
@@ -237,6 +269,33 @@ test.describe("Span linking", () => {
       });
     }
   }
+
+  test("covermore-pds-01 c2: shows evidence note for numeric-mismatch claim", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await navigateTo(page, "covermore-pds-01");
+    await page.click('[data-claim="c2"]');
+    await expect(page.locator('[data-testid="evidence-note"]')).toBeVisible();
+    await expect(page.locator('[data-testid="evidence-note"]')).toContainText("$5,000");
+  });
+
+  test("covermore-pds-01 c3: evidence note shows the grounded claim's own rationale too", async ({ page }) => {
+    // All 21 committed claims across all 5 fixtures have non-empty rationale --
+    // 3 are machine-derived from the numeric check (Task 6), the other 18 are
+    // pre-existing hand-authored text independently verified accurate during
+    // planning. The banner is designed to show for any claim with rationale,
+    // not just numeric-mismatch ones -- this was always the intent (surface
+    // "why" for every verdict, not just the negative "unsupported" case),
+    // so grounded claims showing their rationale too is correct behaviour,
+    // not a gap. This test replaces an earlier, incorrect assumption that a
+    // grounded claim would have no rationale to show.
+    await page.goto("/");
+    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await navigateTo(page, "covermore-pds-01");
+    await page.click('[data-claim="c3"]');
+    await expect(page.locator('[data-testid="evidence-note"]')).toBeVisible();
+    await expect(page.locator('[data-testid="evidence-note"]')).toContainText("$4,000 per item for Camera");
+  });
 });
 
 // ---------------------------------------------------------------------------

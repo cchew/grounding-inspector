@@ -19,3 +19,20 @@ def test_decompose_parses_claims_and_subclaims():
 
 def test_prompt_is_fixed_and_versioned():
     assert "v1" in DECOMPOSE_PROMPT
+
+def test_decompose_claude_raises_value_error_on_empty_content():
+    from grounding.decompose import decompose_output_claude
+
+    class FakeMessage:
+        content = []
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            return FakeMessage()
+
+    class FakeClaudeClient:
+        messages = FakeMessages()
+
+    import pytest
+    with pytest.raises(ValueError, match="empty content"):
+        decompose_output_claude("ignored", FakeClaudeClient())

@@ -2,12 +2,14 @@
 import { ref, onMounted, watch } from "vue";
 import type { Fixture } from "./types";
 import Inspector from "./components/Inspector.vue";
+import HelpModal from "./components/HelpModal.vue";
 
 const fixtureIds = ref<string[]>([]);
 const selectedId = ref<string | null>(null);
 const fixture = ref<Fixture | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
+const helpOpen = ref(false);
 
 onMounted(async () => {
   try {
@@ -61,6 +63,7 @@ function label(id: string): string {
           :class="['fixture-btn', { active: id === selectedId }]"
           @click="selectedId = id"
         >{{ label(id) }}</button>
+        <button data-testid="help-button" class="help-btn" @click="helpOpen = true" aria-label="How this works">?</button>
       </nav>
     </header>
     <main>
@@ -68,6 +71,7 @@ function label(id: string): string {
       <p v-else-if="error" class="load-error">{{ error }}</p>
       <p v-else-if="loading" class="loading">Loading...</p>
     </main>
+    <HelpModal v-if="fixture" :fixture="fixture" :open="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
 
@@ -129,6 +133,24 @@ function label(id: string): string {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-bg);
+}
+
+.help-btn {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: all 0.12s var(--ease-spring);
+}
+.help-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-ink-3);
 }
 
 .load-error { color: var(--chip-unsupported-text); font-size: 0.875rem; }

@@ -25,6 +25,8 @@ def decompose_output_claude(text: str, client, model: str = "claude-haiku-4-5-20
         max_tokens=1024,
         messages=[{"role": "user", "content": DECOMPOSE_PROMPT + text}],
     )
+    if not msg.content:
+        raise ValueError("decompose_output_claude: received empty content from Claude")
     raw = msg.content[0].text.strip()
     if raw.startswith("```"):
         raw = raw.split("```", 2)[1]
