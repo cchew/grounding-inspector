@@ -13,3 +13,6 @@ playwright-report/
 test-results/
 web/src/*.js
 web/tests/*.js
+
+# Local Netlify folder
+.netlify
