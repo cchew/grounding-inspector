@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import type { Fixture } from "./types";
 import Inspector from "./components/Inspector.vue";
 import HelpModal from "./components/HelpModal.vue";
+import { startTour, hasSeenTour } from "./tour";
 
 const fixtureIds = ref<string[]>([]);
 const selectedId = ref<string | null>(null);
@@ -10,6 +11,7 @@ const fixture = ref<Fixture | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const helpOpen = ref(false);
+let tourFired = false;
 
 onMounted(async () => {
   try {
@@ -30,6 +32,11 @@ watch(selectedId, async (id) => {
     const res = await fetch(`/fixtures/${id}.json`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     fixture.value = await res.json();
+    if (!tourFired && !hasSeenTour()) {
+      tourFired = true;
+      await nextTick();
+      startTour();
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Failed to load fixture";
   } finally {
