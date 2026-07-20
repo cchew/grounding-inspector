@@ -19,7 +19,7 @@ fixtures/          JSON fixtures (source doc + AI output + labelled claims + sco
 contract/          fixture.schema.json — shared JSON Schema between engine and web
 engine/
   grounding/       Python pipeline (decompose, verify, label, localise, metrics)
-  tests/           39 pytest unit tests
+  tests/           43 pytest unit tests
   notebook/        validation.ipynb — RAGTruth benchmark runner (Ollama-backed)
 web/
   src/             Hono API server + Vue 3 frontend
@@ -123,6 +123,23 @@ python -c "from grounding.validate import run_sample; print(run_sample(n=300))"
 # Claude Haiku (~35 min, ~$6 USD for n=300)
 python pilot_claude.py 300
 ```
+
+## Inspect integration
+
+`engine/grounding` is also wrapped as a custom [UK AISI Inspect](https://github.com/UKGovernmentBEIS/inspect_ai) `Scorer` (`grounded_claim_scorer()` in `engine/grounding/inspect_scorer.py`), giving the pipeline interoperability with Inspect's task runner and eval log. `inspect_ai` is a documented ad-hoc install, not a pinned dependency in `requirements.txt` — it stays out of the engine's default install.
+
+```bash
+cd engine
+source .venv/bin/activate
+pip install inspect_ai
+PYTHONPATH=. inspect eval grounding/inspect_demo.py
+```
+
+`PYTHONPATH=.` is required — Inspect's task loader doesn't add `engine/` to `sys.path` the way pytest's `conftest.py` does, so the bare command fails with `ModuleNotFoundError: No module named 'grounding'`.
+
+The demo (`engine/grounding/inspect_demo.py`) wraps the 5 existing fixtures as `Sample`s. Its solver copies each fixture's precomputed `ai_output` into `state.output` (no live model call — the fixtures are precomputed offline); the scorer then re-decomposes and re-verifies live against local Ollama + MiniCheck on every run (it never replays a fixture's precomputed `claims`). Verified run: 5 samples, mean 0.352, stderr 0.121.
+
+`grounded_claim_scorer(verifier="minicheck")` (default) routes to the same local, free verifier path as the rest of the pipeline; `verifier="haiku"` swaps in `make_claude_verifier()` — decomposition still runs locally via Ollama either way.
 
 ## Fixture contract
 
