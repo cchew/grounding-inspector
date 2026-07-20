@@ -3,5 +3,5 @@ import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
-  test: { environment: "happy-dom", globals: true, exclude: ["**/e2e.spec.*", "**/node_modules/**"] },
+  test: { environment: "happy-dom", globals: true, exclude: ["**/e2e.spec.*", "**/gate.e2e.spec.*", "**/node_modules/**"] },
 });

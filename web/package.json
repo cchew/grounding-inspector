@@ -6,7 +6,8 @@
     "dev": "node scripts/copy-fixtures.mjs && vite",
     "serve": "tsx src/server.ts",
     "build": "node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:gate:e2e": "playwright test --config=playwright.gate.config.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
@@ -16,6 +17,7 @@
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@netlify/edge-functions": "^3.0.8",
     "@playwright/test": "^1.60.0",
     "@vitejs/plugin-vue": "^5.1.0",
     "@vue/test-utils": "^2.4.6",
