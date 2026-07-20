@@ -33,7 +33,7 @@ export async function signCookieValue(secret: string): Promise<string> {
 
 export async function verifyCookieValue(secret: string, cookieHeader: string | null): Promise<boolean> {
   if (!cookieHeader) return false;
-  const match = cookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));
   if (!match) return false;
   const raw = decodeURIComponent(match[1]);
   const [value, sig] = raw.split(".");

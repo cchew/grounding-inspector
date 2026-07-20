@@ -48,6 +48,18 @@ describe("cookie signing", () => {
     expect(await verifyCookieValue(secret, null)).toBe(false);
     expect(await verifyCookieValue(secret, "other=value")).toBe(false);
   });
+
+  it("matches the real cookie by name, not a decoy whose name merely ends in the cookie name", async () => {
+    const signed = await signCookieValue(secret);
+    const cookieHeader = `other_${COOKIE_NAME}=malicious; ${COOKIE_NAME}=${encodeURIComponent(signed)}`;
+    expect(await verifyCookieValue(secret, cookieHeader)).toBe(true);
+  });
+
+  it("rejects a header containing only a name-collision decoy (no exact cookie-name match)", async () => {
+    const signed = await signCookieValue(secret);
+    const cookieHeader = `evil${COOKIE_NAME}=${encodeURIComponent(signed)}`;
+    expect(await verifyCookieValue(secret, cookieHeader)).toBe(false);
+  });
 });
 
 describe("gateFormHtml", () => {
