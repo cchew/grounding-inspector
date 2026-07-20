@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import type { Fixture, Claim } from "../types";
 import ClaimList from "./ClaimList.vue";
 import SourceDoc from "./SourceDoc.vue";
+import { track } from "../analytics";
 
 const props = defineProps<{ fixture: Fixture }>();
 const active = ref<Claim | null>(null);
@@ -12,6 +13,11 @@ const activeLabel = computed(() => active.value?.label ?? null);
 const activeRationale = computed(() => active.value?.rationale ?? "");
 const g = computed(() => props.fixture.groundedness);
 const claimCount = computed(() => props.fixture.claims.length);
+
+function onSelectClaim(claim: Claim) {
+  active.value = claim;
+  track("claim_clicked", { label: claim.label, hasEvidence: claim.evidence_span_ids.length > 0 });
+}
 </script>
 
 <template>
@@ -47,7 +53,7 @@ const claimCount = computed(() => props.fixture.claims.length);
           <span class="legend-chip partial">~ partial</span>
           <span class="legend-chip unsupported">✗ unsupported</span>
         </div>
-        <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="active = $event" />
+        <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="onSelectClaim" />
       </section>
 
       <!-- Right: source document -->

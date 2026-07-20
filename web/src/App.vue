@@ -4,6 +4,7 @@ import type { Fixture } from "./types";
 import Inspector from "./components/Inspector.vue";
 import HelpModal from "./components/HelpModal.vue";
 import { startTour, hasSeenTour } from "./tour";
+import { track } from "./analytics";
 
 const fixtureIds = ref<string[]>([]);
 const selectedId = ref<string | null>(null);
@@ -14,6 +15,7 @@ const helpOpen = ref(false);
 let tourFired = false;
 
 onMounted(async () => {
+  track("gate_pass");
   try {
     const res = await fetch("/fixtures/index.json");
     fixtureIds.value = await res.json();
@@ -32,6 +34,7 @@ watch(selectedId, async (id) => {
     const res = await fetch(`/fixtures/${id}.json`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     fixture.value = await res.json();
+    track("fixture_switched", { id });
     if (!tourFired && !hasSeenTour()) {
       tourFired = true;
       await nextTick();
