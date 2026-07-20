@@ -10,7 +10,10 @@ import {
 } from "./gate-logic.ts";
 
 export default async (request: Request, context: Context) => {
-  const secret = Netlify.env.get("GATE_SECRET") ?? "";
+  const secret = Netlify.env.get("GATE_SECRET");
+  if (!secret || secret.length < 16) {
+    return new Response("Server misconfigured", { status: 500 });
+  }
 
   if (request.method === "POST") {
     const form = await request.formData();
