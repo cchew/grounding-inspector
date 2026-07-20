@@ -71,7 +71,7 @@ export function startTour(): ReturnType<typeof driver> {
   tour.drive();
 
   // Deliberately not using driver.js's onDestroyed/onCloseClick hooks: empirically
-  // (driver.js 1.7.0) onDestroyed only fires from the final "Done" button, and
+  // observed (driver.js ^1.8.0, installed version) onDestroyed only fires from the final "Done" button, and
   // Escape closes the popover without triggering either hook — so a visitor who
   // dismisses the tour the normal way (X, Escape, overlay click) would otherwise
   // see it again on every future visit. Watching the popover's own removal from

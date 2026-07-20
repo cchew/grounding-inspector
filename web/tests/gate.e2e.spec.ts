@@ -22,6 +22,7 @@ test.describe("access gate", () => {
     const response = await page.goto("/fixtures/covermore-pds-01.json");
     const body = await response?.text();
     expect(body).not.toContain("fixture_id");
+    expect(body).toContain("Enter the email of the person who told you about this tool.");
   });
 
   test("a valid cookie holder's asset requests still load", async ({ page }) => {
