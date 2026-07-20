@@ -1,4 +1,3 @@
-import pytest
 from grounding.labelling import aggregate_label
 
 def test_all_supported_is_grounded():
@@ -14,6 +13,8 @@ def test_single_subclaim():
     assert aggregate_label([True]) == "grounded"
     assert aggregate_label([False]) == "unsupported"
 
-def test_empty_raises():
-    with pytest.raises(ValueError):
-        aggregate_label([])
+def test_empty_is_unsupported():
+    # A claim with zero atomic sub-claims (e.g. a pure opinion statement the
+    # decomposer found nothing checkable in) has no supported verdict to
+    # aggregate -- treated as unsupported, not an error.
+    assert aggregate_label([]) == "unsupported"
