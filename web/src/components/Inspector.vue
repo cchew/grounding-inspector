@@ -42,6 +42,7 @@ const claimCount = computed(() => props.fixture.claims.length);
       <section class="pane pane-claims">
         <h2 class="pane-heading">AI Output</h2>
         <div class="label-legend">
+          <span class="legend-label">Legend:</span>
           <span class="legend-chip grounded">✓ grounded</span>
           <span class="legend-chip partial">~ partial</span>
           <span class="legend-chip unsupported">✗ unsupported</span>
@@ -176,6 +177,13 @@ const claimCount = computed(() => props.fixture.claims.length);
   flex-wrap: wrap;
   padding: var(--s-2) var(--s-4);
   border-bottom: 1px solid var(--color-border-light);
+}
+
+.legend-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink-3);
+  align-self: center;
 }
 
 .legend-chip {

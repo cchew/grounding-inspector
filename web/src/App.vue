@@ -73,6 +73,9 @@ function label(id: string): string {
         <button data-testid="help-button" class="help-btn" @click="helpOpen = true" aria-label="How this works">?</button>
       </nav>
     </header>
+    <p data-testid="disclaimer" class="disclaimer">
+      Not an official service. A demonstration tool for checking whether AI-generated claims are backed by a source document.
+    </p>
     <main>
       <Inspector v-if="fixture" :fixture="fixture" />
       <p v-else-if="error" class="load-error">{{ error }}</p>
@@ -162,4 +165,18 @@ function label(id: string): string {
 
 .load-error { color: var(--chip-unsupported-text); font-size: 0.875rem; }
 .loading { color: var(--color-ink-3); font-size: 0.875rem; }
+
+.disclaimer {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 0 var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  background: var(--chip-partial-bg);
+  border: 1px solid var(--chip-partial-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--chip-partial-text);
+  text-align: center;
+}
 </style>
