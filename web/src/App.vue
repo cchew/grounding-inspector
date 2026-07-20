@@ -166,6 +166,10 @@ function label(id: string): string {
 .load-error { color: var(--chip-unsupported-text); font-size: 0.875rem; }
 .loading { color: var(--color-ink-3); font-size: 0.875rem; }
 
+main {
+  min-height: 480px;
+}
+
 .disclaimer {
   position: sticky;
   top: 0;
