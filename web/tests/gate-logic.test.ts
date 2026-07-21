@@ -5,7 +5,7 @@ import {
   verifyCookieValue,
   gateFormHtml,
   COOKIE_NAME,
-} from "../netlify/edge-functions/gate-logic";
+} from "../netlify/edge-functions/lib/gate-logic";
 
 describe("isAllowedEmail", () => {
   it("matches the two allowlisted addresses, case-insensitively", () => {

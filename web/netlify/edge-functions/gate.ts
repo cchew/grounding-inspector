@@ -7,7 +7,7 @@ import {
   gateFormHtml,
   COOKIE_NAME,
   COOKIE_MAX_AGE,
-} from "./gate-logic.ts";
+} from "./lib/gate-logic.ts";
 
 export default async (request: Request, context: Context) => {
   const secret = Netlify.env.get("GATE_SECRET");

@@ -1,7 +1,12 @@
-// netlify/edge-functions/gate-logic.ts
+// netlify/edge-functions/lib/gate-logic.ts
 // Pure logic for the access gate — no Netlify/Deno runtime dependency, so this
 // is testable with plain Vitest. gate.ts (the actual edge function) wires this
 // into Request/Response and the Netlify Context.
+//
+// Lives in lib/, not directly in edge-functions/, because Netlify's bundler
+// auto-registers every top-level file in edge-functions/ as its own function
+// and fails on this one (no default export) — nested files are shared code,
+// not auto-discovered.
 
 const ALLOWED_EMAILS = ["test.user@gmail.com", "test.user@example.org"];
 
