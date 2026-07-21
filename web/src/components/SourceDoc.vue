@@ -39,8 +39,6 @@ watch(() => props.activeSpanIds, (ids) => {
 <style scoped>
 .source-doc {
   padding: var(--s-2) 0;
-  max-height: 480px;
-  overflow-y: auto;
 }
 
 .evidence-note {

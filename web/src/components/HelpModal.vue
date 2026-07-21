@@ -88,6 +88,11 @@ const unsupportedExample = computed(() => exampleFor("unsupported"));
       </section>
 
       <section class="modal-section">
+        <h2>Code &amp; feedback</h2>
+        <p>Source and issue tracker: <a href="https://github.com/cchew/grounding-inspector" target="_blank" rel="noopener noreferrer">github.com/cchew/grounding-inspector</a>. Bug reports and feature requests welcome there.</p>
+      </section>
+
+      <section class="modal-section">
         <h2>Scope</h2>
         <p class="scope-declaration" data-testid="scope-declaration">Unsupported claims have not been verified as false. Claims are evaluated only against the provided source document(s). Claims that are true but absent from the source will be classified as unsupported.</p>
       </section>

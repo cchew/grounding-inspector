@@ -12,6 +12,7 @@ const fixture = ref<Fixture | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const helpOpen = ref(false);
+const appVersion = __APP_VERSION__;
 let tourFired = false;
 
 onMounted(async () => {
@@ -63,7 +64,11 @@ function label(id: string): string {
   <div class="app-shell">
     <header class="app-header">
       <div class="app-title">
-        <h1>Grounding Inspector</h1>
+        <div class="title-row">
+          <h1>Grounding Inspector</h1>
+          <button data-testid="help-button" class="help-btn" @click="helpOpen = true" aria-label="How this works">?</button>
+          <button type="button" class="tour-btn" @click="startTour">Take the tour</button>
+        </div>
         <p class="subtitle">Scoring whether AI claims are backed by document evidence</p>
       </div>
       <nav class="fixture-nav" v-if="fixtureIds.length">
@@ -73,17 +78,17 @@ function label(id: string): string {
           :class="['fixture-btn', { active: id === selectedId }]"
           @click="selectedId = id"
         >{{ label(id) }}</button>
-        <button data-testid="help-button" class="help-btn" @click="helpOpen = true" aria-label="How this works">?</button>
       </nav>
     </header>
-    <p data-testid="disclaimer" class="disclaimer">
-      Not an official service. A demonstration tool for checking whether AI-generated claims are backed by a source document.
-    </p>
     <main>
       <Inspector v-if="fixture" :fixture="fixture" />
       <p v-else-if="error" class="load-error">{{ error }}</p>
       <p v-else-if="loading" class="loading">Loading...</p>
     </main>
+    <footer data-testid="disclaimer" class="disclaimer">
+      <span class="disclaimer-text">Not an official service. A demonstration tool for checking whether AI-generated claims are backed by a source document.</span>
+      <span class="disclaimer-version mono">v{{ appVersion }}</span>
+    </footer>
     <HelpModal v-if="fixture" :fixture="fixture" :open="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
@@ -109,6 +114,12 @@ function label(id: string): string {
 .app-header h1 {
   font-size: 1.125rem;
   color: var(--color-ink);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
 }
 
 .subtitle {
@@ -152,18 +163,41 @@ function label(id: string): string {
   font-family: var(--font-ui);
   font-size: 0.75rem;
   font-weight: 600;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-ink-2);
   cursor: pointer;
+  line-height: 1;
   transition: all 0.12s var(--ease-spring);
 }
 .help-btn:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-ink-3);
+}
+.help-btn:focus-visible {
+  outline: 2px solid var(--color-accent-border);
+  outline-offset: 2px;
+}
+
+.tour-btn {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-ink-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.tour-btn:hover { color: var(--color-ink); }
+.tour-btn:focus-visible {
+  outline: 2px solid var(--color-accent-border);
+  outline-offset: 2px;
 }
 
 .load-error { color: var(--chip-unsupported-text); font-size: 0.875rem; }
@@ -175,15 +209,24 @@ main {
 
 .disclaimer {
   position: sticky;
-  top: 0;
+  bottom: 0;
   z-index: 10;
-  margin: 0 0 var(--s-4);
-  padding: var(--s-2) var(--s-4);
-  background: var(--chip-partial-bg);
-  border: 1px solid var(--chip-partial-border);
-  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+  margin-left: calc(var(--s-5) * -1);
+  margin-right: calc(var(--s-5) * -1);
+  padding: var(--s-3) var(--s-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
   font-size: 0.75rem;
-  color: var(--chip-partial-text);
-  text-align: center;
+  color: var(--color-ink-3);
+}
+
+.disclaimer-version {
+  flex-shrink: 0;
+  color: var(--color-ink-3);
 }
 </style>
