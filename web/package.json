@@ -1,6 +1,11 @@
 {
   "name": "grounding-inspector-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "Vue 3 + Hono web app for Grounding Inspector — a Layer-3 groundedness evaluation tool for LLM outputs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cchew/grounding-inspector.git"
+  },
   "private": true,
   "type": "module",
   "scripts": {

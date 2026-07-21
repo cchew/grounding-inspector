@@ -2,6 +2,7 @@
 import type { Context } from "@netlify/edge-functions";
 import {
   isAllowedEmail,
+  parseAllowedEmails,
   signCookieValue,
   verifyCookieValue,
   gateFormHtml,
@@ -14,11 +15,12 @@ export default async (request: Request, context: Context) => {
   if (!secret || secret.length < 16) {
     return new Response("Server misconfigured", { status: 500 });
   }
+  const allowedEmails = parseAllowedEmails(Netlify.env.get("GATE_ALLOWED_EMAILS"));
 
   if (request.method === "POST") {
     const form = await request.formData();
     const email = String(form.get("email") ?? "");
-    if (!isAllowedEmail(email)) {
+    if (!isAllowedEmail(email, allowedEmails)) {
       return new Response(gateFormHtml(true), {
         status: 401,
         headers: { "content-type": "text/html" },

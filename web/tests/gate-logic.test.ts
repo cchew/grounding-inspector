@@ -1,24 +1,43 @@
 import { describe, it, expect } from "vitest";
 import {
   isAllowedEmail,
+  parseAllowedEmails,
   signCookieValue,
   verifyCookieValue,
   gateFormHtml,
   COOKIE_NAME,
 } from "../netlify/edge-functions/lib/gate-logic";
 
+describe("parseAllowedEmails", () => {
+  it("splits, trims, and lowercases a comma-separated list", () => {
+    expect(parseAllowedEmails(" Test@Example.com , other@example.org ")).toEqual([
+      "test@example.com",
+      "other@example.org",
+    ]);
+  });
+
+  it("returns an empty list for unset or empty input", () => {
+    expect(parseAllowedEmails(undefined)).toEqual([]);
+    expect(parseAllowedEmails(null)).toEqual([]);
+    expect(parseAllowedEmails("")).toEqual([]);
+  });
+});
+
 describe("isAllowedEmail", () => {
-  it("matches the two allowlisted addresses, case-insensitively", () => {
-    expect(isAllowedEmail("test.user@gmail.com")).toBe(true);
-    expect(isAllowedEmail("test.user@Gmail.com")).toBe(true);
-    expect(isAllowedEmail("test.user@example.org")).toBe(true);
-    expect(isAllowedEmail("  test.user@gmail.com  ")).toBe(true);
+  const allowed = ["test@example.com", "other@example.org"];
+
+  it("matches allowlisted addresses, case-insensitively", () => {
+    expect(isAllowedEmail("test@example.com", allowed)).toBe(true);
+    expect(isAllowedEmail("Test@Example.com", allowed)).toBe(true);
+    expect(isAllowedEmail("other@example.org", allowed)).toBe(true);
+    expect(isAllowedEmail("  test@example.com  ", allowed)).toBe(true);
   });
 
   it("rejects anything else", () => {
-    expect(isAllowedEmail("someone@example.com")).toBe(false);
-    expect(isAllowedEmail("")).toBe(false);
-    expect(isAllowedEmail("test.user@gmail.com.evil.com")).toBe(false);
+    expect(isAllowedEmail("someone@else.com", allowed)).toBe(false);
+    expect(isAllowedEmail("", allowed)).toBe(false);
+    expect(isAllowedEmail("test@example.com.evil.com", allowed)).toBe(false);
+    expect(isAllowedEmail("test@example.com", [])).toBe(false);
   });
 });
 
@@ -63,10 +82,9 @@ describe("cookie signing", () => {
 });
 
 describe("gateFormHtml", () => {
-  it("never mentions the allowlisted addresses", () => {
-    const html = gateFormHtml(true);
-    expect(html).not.toContain("test.user@gmail.com");
-    expect(html).not.toContain("example.org");
+  it("never interpolates an email address into the page", () => {
+    expect(gateFormHtml(true)).not.toContain("@");
+    expect(gateFormHtml(false)).not.toContain("@");
   });
 
   it("shows generic rejection copy only when rejected", () => {

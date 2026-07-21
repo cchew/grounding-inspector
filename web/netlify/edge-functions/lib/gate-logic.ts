@@ -8,10 +8,16 @@
 // and fails on this one (no default export) — nested files are shared code,
 // not auto-discovered.
 
-const ALLOWED_EMAILS = ["test.user@gmail.com", "test.user@example.org"];
+export function parseAllowedEmails(raw: string | undefined | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
 
-export function isAllowedEmail(email: string): boolean {
-  return ALLOWED_EMAILS.includes(email.trim().toLowerCase());
+export function isAllowedEmail(email: string, allowedEmails: string[]): boolean {
+  return allowedEmails.includes(email.trim().toLowerCase());
 }
 
 export const COOKIE_NAME = "gi_gate";
@@ -48,6 +54,8 @@ export async function verifyCookieValue(secret: string, cookieHeader: string | n
 }
 
 export function gateFormHtml(rejected = false): string {
+  // Never interpolate allowedEmails here — this HTML is served to
+  // unauthenticated visitors.
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

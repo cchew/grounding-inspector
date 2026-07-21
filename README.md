@@ -74,6 +74,15 @@ npm run serve &        # API server on :3000
 npm run dev            # Vite dev server on :5173
 ```
 
+### Deployment
+
+`netlify.toml` deploys the built `web/` app statically. The live demo sits behind
+a Netlify Edge Function access gate (`web/netlify/edge-functions/gate.ts`) that
+requires two environment variables set on the Netlify site: `GATE_SECRET`
+(HMAC signing key for the access cookie) and `GATE_ALLOWED_EMAILS`
+(comma-separated allowlist). Neither is required to build or run the app
+locally — the gate only applies to the deployed Netlify instance.
+
 ## Verifier modes
 
 The pipeline supports two verifier backends, selectable at runtime:
