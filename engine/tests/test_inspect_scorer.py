@@ -62,7 +62,7 @@ def test_grounded_claim_scorer_matches_independent_groundedness_call(monkeypatch
 
     expected = groundedness(["grounded", "unsupported"])
     assert result.value == pytest.approx(expected["score"] / 100)
-    assert result.answer == "1/2 grounded"
+    assert result.answer == "1 grounded, 0 partial, 1 unsupported (2 total)"
     assert len(result.metadata["claims"]) == 2
     assert result.metadata["claims"][0]["label"] == "grounded"
     assert result.metadata["claims"][1]["label"] == "unsupported"

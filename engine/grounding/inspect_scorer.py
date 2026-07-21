@@ -41,7 +41,10 @@ def grounded_claim_scorer(verifier: str = "minicheck"):
         n_claims = len(labeled)
         return Score(
             value=stats["score"] / 100,
-            answer=f"{stats['n_grounded']}/{n_claims} grounded",
+            answer=(
+                f"{stats['n_grounded']} grounded, {stats['n_partial']} partial, "
+                f"{stats['n_unsupported']} unsupported ({n_claims} total)"
+            ),
             metadata={"claims": labeled},
         )
 
