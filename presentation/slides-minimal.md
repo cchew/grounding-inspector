@@ -314,7 +314,7 @@ Teams/ADO Wiki adaptation: this pattern doesn't touch a chat platform at all; it
 
 ### MiniCheck (local, free) vs Claude Haiku (cloud, paid)
 - Same interface, swappable at runtime
-- Validation run: $0 vs ~$6 for n=300 documents
+- Validation run: $0 vs ~A$9 for n=300 documents
 
 ### Numeric-consistency as a deterministic pre-pass
 - NLI can't do arithmetic: a transposed number can still look "entailed"
@@ -332,7 +332,7 @@ For execs: decision 3 is the governance-relevant one: a known, named blind spot 
 | Mode | Cost | Recall | Agreement (κ) |
 |---|---|---|---|
 | MiniCheck (default) | Free | 0.69 | 0.195 |
-| Claude Haiku | ~$0.03/doc | 0.90 | 0.331 |
+| Claude Haiku | ~A$0.05/doc | 0.90 | 0.331 |
 
 <div class="def"><strong>Cohen's kappa (κ)</strong>: agreement with human judgment, corrected for chance, not raw accuracy. 0.195 is "slight agreement," 0.331 is "fair agreement" on the standard scale.</div>
 <div class="def"><strong>RAGTruth</strong>: a published benchmark of labelled hallucinations in AI summaries (n=300 sampled here), not a number this project invented or self-labelled.</div>
@@ -456,7 +456,7 @@ The IMDA Model AI Governance Framework for Agentic AI (Jan 2026) names explainab
 | Balanced accuracy | 0.612 | n/a |
 | False negatives | 31 / 100 positives | n/a |
 | Decomposer | Ollama qwen2.5:7b-instruct | Claude Haiku 4.5 |
-| Cost | Free, local | ~$0.03/doc |
+| Cost | Free, local | ~A$0.05/doc |
 
 Both validated on RAGTruth, n=300, seed=0.
 
