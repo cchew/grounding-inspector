@@ -7,5 +7,5 @@ const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), 
 export default defineConfig({
   plugins: [vue()],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  test: { environment: "happy-dom", globals: true, exclude: ["**/e2e.spec.*", "**/gate.e2e.spec.*", "**/node_modules/**"] },
+  test: { environment: "happy-dom", globals: true, exclude: ["**/e2e.spec.*", "**/node_modules/**"] },
 });
