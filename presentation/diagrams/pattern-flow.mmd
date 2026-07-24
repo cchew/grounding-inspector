@@ -1,0 +1,10 @@
+graph LR
+    A[Long Document + AI Output] --> B[Decompose-then-Verify]
+    B --> C[Claim-level Verdicts]
+    C --> D
+
+    subgraph D[Applied Domains]
+      D1[Travel Insurance PDS]
+      D2[Regulatory Submissions]
+      D3[Legislative and Policy Text]
+    end

@@ -1,0 +1,8 @@
+graph LR
+    S[Source Document] --> C[Verify]
+    A[AI Output] -->|decompose| B[Atomic Claims]
+    B --> C
+    C -->|MiniCheck NLI, no retrieval gate| D[Label]
+    D -->|deterministic pass| E[Numeric Check]
+    E --> F[Localise]
+    F --> G[Two-pane Inspector + Scorecard]
