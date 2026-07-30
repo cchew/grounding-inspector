@@ -217,16 +217,16 @@ section.appendix h2 {
 <!-- _class: lead -->
 <!-- _paginate: false -->
 
-# Checking AI Claims Against Evidence
+# Does Your AI Know When It's Lying
 
 <br/>
-One click. Every claim checked. No re-reading required.
+Checking AI Claims Against Evidence
 
-Ching Chew · July 2026
+Ching Chew · August 2026
 
 <br/>
 
-github.com/cchew/grounding-inspector
+![w:200](screenshots/qr.png)
 
 <!-- note:
 Pre-show: deployed app open on the Budget Direct fixture, scorecard visible, help modal closed.
@@ -243,7 +243,7 @@ Let the room sit with it for a second before moving to the next slide.
 
 - You're told you can use AI
 - You're still accountable for what it says
-- The report is 200 pages; you have an afternoon
+- The report is 200 pages and you have an afternoon
 <br/>
 
 **How do you check the parts that matter without reading everything?**
@@ -253,17 +253,24 @@ Don't answer it. Let it sit. Everyone in the room has hit this, whether they cal
 
 For execs: this is the governance gap they're already worried about: staff using Copilot/Claude with no way to verify output.
 For devs: this is the eval gap: "I built a RAG pipeline" isn't the same as "I measured whether it's right."
+
+Humans are not 100% right. We also experience time pressure and review fatigue.
+
+What could you do right now to automate? Agent self-review, subagent review, second model review etc.
+
+I wanted something more robust with eval against ground truth/golden dataset.
 -->
 
 ---
 
 ## Before / After
 
-![bg left:50% contain](screenshots/two-pane-viewer.png)
-
 **Before:** a paragraph of AI-generated text. Plausible. Confident. No way to tell which parts are backed by the source.
 
 **After:** the same output, claim by claim (grounded, partial or unsupported). Click any claim to see its evidence.
+
+
+![bg right:50% contain](screenshots/two-pane-viewer.png)
 
 <!-- note:
 Let the screenshot do most of the work. Don't over-narrate this one.
@@ -292,7 +299,7 @@ Budget Direct PDS Fixture
 
 ## How It Works
 
-![w:900](diagrams/component-flow.svg)
+![w:1200](diagrams/component-flow.svg)
 
 <div class="def"><strong>Entailment (NLI)</strong>: does the source text entail the claim, contradict it or say nothing about it? This is what the verifier scores, not "does this sound plausible."</div>
 
@@ -313,16 +320,19 @@ Teams/ADO Wiki adaptation: this pattern doesn't touch a chat platform at all; it
 - A missed retrieval hit reads as "unsupported" for the wrong reason
 
 ### MiniCheck (local, free) vs Claude Haiku (cloud, paid)
-- Same interface, swappable at runtime
+- Same interface, swappable at runtime, but not symmetric under the hood
+- MiniCheck scores every chunk independently and keeps the best match, while Haiku sees all chunks in one prompt and answers once
 - Validation run: $0 vs ~A$9 for n=300 documents
 
 ### Numeric-consistency as a deterministic pre-pass
 - NLI can't do arithmetic: a transposed number can still look "entailed"
+- Scoped to dollar figures specifically; doesn't cover percentages, dates or other counts
 - Caught by a separate, deterministic check, not folded into the verifier
 
 <!-- note:
 For devs: decision 1 is the one worth defending in Q&A: "why not just use a vector DB?" The answer is recall, not laziness.
-For execs: decision 3 is the governance-relevant one: a known, named blind spot with a documented fix, not a silent gap.
+For devs: the MiniCheck/Haiku asymmetry matters if recall numbers get compared head-to-head in Q&A — Haiku's higher recall (0.90 vs 0.69) isn't purely a model-quality story, it's also a different consumption pattern (single-pass over concatenated context vs exhaustive per-chunk scoring).
+For execs: decision 3 is the governance-relevant one: a known, named blind spot with a documented fix, not a silent gap. The numeric check itself has a named scope limit too: dollar figures only, for now.
 -->
 
 ---
@@ -351,6 +361,7 @@ For execs: recall (not kappa) is the number that matters operationally: a missed
 - **UK AISI's Inspect harness**: Grounding Inspector ships as a custom Inspect `Scorer`; it extends Inspect rather than competing with it
 - **Numeric transposition**: open, field-wide gap; reference architecture: Proof-Carrying Numbers (arXiv:2509.06902)
 - **Entity/citation substitution**: same structural cause as the numeric gap; reference architecture: HalluGraph (arXiv:2512.01659)
+- **Whole-of-government scale**: Dept of Finance's GovCMS DXP team runs the same decompose-then-verify shape (their "Scrutiny" pipeline) across the entire AU government content corpus; this is that pattern, shippable today, at solo-project scale
 <br/>
 
 **Both gaps are named here, not hidden.**
@@ -358,6 +369,7 @@ For execs: recall (not kappa) is the number that matters operationally: a missed
 <!-- note:
 Anticipates the question before it's asked. If someone in Q&A knows Inspect, this earns credibility rather than looking unaware of it.
 Entity/citation substitution: an NLI verifier tolerates a swapped name or citation if the sentence shape still matches; same failure mode as the numeric gap, different span type.
+GovCMS DXP: "Government content is AI food," APS Digital Profession Innovation Month, July 2026. Their Verify stream benchmarks AI answers against an authoritative whole-of-gov corpus using a hierarchical multi-agent review pipeline, same shape as this tool's verifier, running at ~5c/doc on a $10k/month GovAI budget. Good "who else is already doing this" answer if asked.
 -->
 
 ---
@@ -383,17 +395,19 @@ Point out: this isn't the NLI verifier catching it; it's the separate determinis
 - MiniCheck doesn't do arithmetic: numeric-consistency is a bolt-on, not built in
 - Entity/citation substitution is unsolved here too: same as the numeric gap, field-wide (see SOTA)
 - Validated on RAGTruth's general-summarisation distribution, not measured on insurance/legal/regulatory text specifically
+- Grounding checks what's said, not what's missing: omission errors are structurally invisible to this pattern
 
 <!-- note:
 "I'm showing you a pattern and being straight about where it ends."
 For execs: this is what a defensible governance story looks like: known limits, named, with a documented fix path, not a claim of perfection.
+Omission: NOHARM (arXiv:2512.01241, Stanford/Harvard ARISE Network) found errors of omission account for more than 80% of severe errors across 31 LLMs on medical consultation tasks, not commission. A fact-check-against-source pass can only ever evaluate claims present in the output; it has no mechanism to flag "the model should have said X but didn't." Same paradigm limit applies here, not just in medicine. Name this before Q&A raises it as a gotcha.
 -->
 
 ---
 
 ## The Bigger Pattern
 
-![w:750](diagrams/pattern-flow.svg)
+![w:1200](diagrams/pattern-flow.svg)
 
 The same decompose-then-verify shape applies to:
 
@@ -404,6 +418,7 @@ The same decompose-then-verify shape applies to:
 <!-- note:
 "So what" moment for executives: any long-document-plus-AI-output pairing in your own department fits this shape.
 Seed the question: where in your team's workflow does an AI already summarise something someone else has to sign off on?
+Legislative and policy text isn't hypothetical: Dept of Finance's GovCMS DXP team is already building this whole-of-government (search.gov.au alpha), including a verification pipeline for the same reason. If asked "is anyone doing this at scale," that's the answer.
 -->
 
 ---
@@ -411,13 +426,18 @@ Seed the question: where in your team's workflow does an AI already summarise so
 ## Conclusion
 
 "The first principle is that you must not fool yourself, and you are the easiest person to fool."
-- Richard Feynman
+__Richard Feynman__
 <br/>
-- An honestly-measured verifier beats an unmeasured "it seemed fine"
-- The ceiling is real. Say so. Ship it anyway.
+
+- Grounding Inspector tells you if an AI claim is supported by your document
+- Uses RAGTruth (hallucination benchmark) and NLI
+- Improves with better verifier (i.e. models) but still has gaps (e.g. entity/citation substitution, omission errors)
+
 <br/>
-- Thank you for your time
-- Feedback and comments: DM me via Teams or LinkedIn
+
+Thank you for your time
+Feedback and comments: DM me via Teams or LinkedIn
+[github.com/cchew/grounding-inspector](https://github.com/cchew/grounding-inspector)
 
 <!-- note:
 The Feynman line is doing the real work of this talk: the whole build is an argument against fooling yourself about output quality.
@@ -463,4 +483,22 @@ Both validated on RAGTruth, n=300, seed=0.
 <!-- note:
 Recall is the metric this tool prioritises: a missed hallucination (false negative) is costlier than a false alarm for this tool's intended use.
 Balanced accuracy and false-negative counts are reported for MiniCheck only in the current benchmark run.
+Provenance: MiniCheck's numbers are stamped into all five fixture scorecards with a pipeline commit hash (1814f83) and are reproducible from the repo. Claude Haiku's numbers came from a real pilot_claude.py run, but its output directory is gitignored and no longer exists locally, so the exact figures aren't independently re-derivable from what's checked in. Only mention this if asked to reproduce the Haiku number specifically.
+-->
+
+---
+
+<!-- _class: appendix -->
+<!-- _paginate: false -->
+
+## Appendix C: Other Ways to Catch What Grounding Misses
+
+- **Self-review** (same model checks its own output): NOHARM found repeating the same model doesn't meaningfully reduce harm
+- **Cross-model review** (a different vendor's model checks the output): NOHARM found diverse multi-model ensembles reduce harm by ~8 percentage points over solo models; only strong "finisher" models drove the gain, not any combination
+- **Prompt refinement**: a different lever entirely; improves what the model says, not whether an independent check catches what it got wrong
+
+<!-- note:
+Cover only if asked "what about self-review / a second model / better prompting instead of a separate verifier."
+Source: NOHARM (arXiv:2512.01241), Stanford/Harvard ARISE Network, bench.arise-ai.org. Same-model-twice ≈ self-consistency, not independent verification, and the data agrees: it doesn't help much. This is the argument for this tool's separate-verifier-model design, not against it: cross-model checking works, self-checking doesn't, and this tool goes one step further by using a purpose-built entailment verifier rather than a second general chat model.
+Prompt refinement isn't a competing verification strategy: it's upstream (better elicitation), this tool is downstream (independent check). Don't let the room conflate the two.
 -->
