@@ -342,7 +342,7 @@ For execs: decision 3 is the governance-relevant one: a known, named blind spot 
 | Mode | Cost | Recall | Agreement (κ) |
 |---|---|---|---|
 | MiniCheck (default) | Free | 0.69 | 0.195 |
-| Claude Haiku | ~A$0.05/doc | 0.90 | 0.331 |
+| Claude Haiku | ~A$0.03/doc | 0.90 | 0.331 |
 
 <div class="def"><strong>Cohen's kappa (κ)</strong>: agreement with human judgment, corrected for chance, not raw accuracy. 0.195 is "slight agreement," 0.331 is "fair agreement" on the standard scale.</div>
 <div class="def"><strong>RAGTruth</strong>: a published benchmark of labelled hallucinations in AI summaries (n=300 sampled here), not a number this project invented or self-labelled.</div>
