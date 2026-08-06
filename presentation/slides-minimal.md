@@ -476,7 +476,7 @@ The IMDA Model AI Governance Framework for Agentic AI (Jan 2026) names explainab
 | Balanced accuracy | 0.612 | n/a |
 | False negatives | 31 / 100 positives | n/a |
 | Decomposer | Ollama qwen2.5:7b-instruct | Claude Haiku 4.5 |
-| Cost | Free, local | ~A$0.05/doc |
+| Cost | Free, local | ~A$0.03/doc |
 
 Both validated on RAGTruth, n=300, seed=0.
 
