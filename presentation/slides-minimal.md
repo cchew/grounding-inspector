@@ -396,11 +396,13 @@ Point out: this isn't the NLI verifier catching it; it's the separate determinis
 - Entity/citation substitution is unsolved here too: same as the numeric gap, field-wide (see SOTA)
 - Validated on RAGTruth's general-summarisation distribution, not measured on insurance/legal text
 - Grounding checks what's said, not what's missing: omission errors are structurally invisible to this pattern
+- The highlighted "evidence" is a best-guess keyword match, not proof of what the verifier actually used
 
 <!-- note:
 "I'm showing you a pattern and being straight about where it ends."
 For execs: this is what a defensible governance story looks like: known limits, named, with a documented fix path, not a claim of perfection.
 Omission: NOHARM (arXiv:2512.01241, Stanford/Harvard ARISE Network) found errors of omission account for more than 80% of severe errors across 31 LLMs on medical consultation tasks, not commission. A fact-check-against-source pass can only ever evaluate claims present in the output; it has no mechanism to flag "the model should have said X but didn't." Same paradigm limit applies here, not just in medicine. Name this before Q&A raises it as a gotcha.
+Localise disconnect: the verdict (grounded/partial/unsupported) and the highlighted span are computed independently. The verifier scores chunks for entailment; the localiser separately picks the section with the most shared keywords. For MiniCheck the verifier does know its best-scoring chunk internally, but that information is discarded before it reaches the localiser. For Haiku there's no per-chunk score to discard in the first place — it reads all chunks in one pass. So a claim can be correctly grounded against section A while the UI highlights section B. State this plainly if a technical audience member asks how the evidence highlight is derived — it's a keyword-overlap heuristic, not a trace of the verifier's reasoning. Fix path logged in FUTURE.md: threading MiniCheck's real argmax chunk through is a contained change; Haiku has no equivalent signal to reuse and needs its own design call (self-reported span vs re-architecting to per-chunk scoring).
 -->
 
 ---
