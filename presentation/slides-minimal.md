@@ -394,7 +394,7 @@ Point out: this isn't the NLI verifier catching it; it's the separate determinis
 - κ=0.195 is an honest ceiling, not a marketing number
 - MiniCheck doesn't do arithmetic: numeric-consistency is a bolt-on, not built in
 - Entity/citation substitution is unsolved here too: same as the numeric gap, field-wide (see SOTA)
-- Validated on RAGTruth's general-summarisation distribution, not measured on insurance/legal/regulatory text specifically
+- Validated on RAGTruth's general-summarisation distribution, not measured on insurance/legal text
 - Grounding checks what's said, not what's missing: omission errors are structurally invisible to this pattern
 
 <!-- note:
