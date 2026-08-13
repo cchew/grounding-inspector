@@ -45,7 +45,7 @@ def run(model_name: str) -> list[dict]:
     scorer = build_scorer(model_name=model_name)
     results = []
     for case in CASES:
-        supported, prob = verify_subclaim(case["subclaim"], [SOURCE_CHUNK], scorer)
+        supported, prob, _ = verify_subclaim(case["subclaim"], [SOURCE_CHUNK], scorer)
         caught = not supported
         results.append({
             **case, "model": model_name, "predicted_supported": supported,

@@ -39,7 +39,7 @@ def count_and_score(ds, decompose_fn, verify_fn) -> tuple[list[int], int]:
             subclaims = [sc for c in claims for sc in c["subclaims"]]
             if not subclaims:
                 subclaims = [ex["output"]]
-            supported = [verify_fn(sc, chunks) for sc in subclaims]
+            supported = [verify_fn(sc, chunks)[0] for sc in subclaims]
             pred.append(0 if all(supported) else 1)
         except (ValueError, KeyError):
             pred.append(0)

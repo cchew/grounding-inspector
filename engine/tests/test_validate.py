@@ -28,7 +28,7 @@ def test_summarise_accepts_and_the_run_sample_loop_counts_parse_failures():
         return [{"text": text, "subclaims": [text]}]
 
     def verify_fn(subclaim, chunks):
-        return True
+        return True, None, None
 
     examples = [
         {"output": "ok1", "context": "doc"},

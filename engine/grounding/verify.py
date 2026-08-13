@@ -9,13 +9,20 @@ def chunk_document(text: str, max_chars: int = 1000) -> list[str]:
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)] or [""]
 
 
-def verify_subclaim(subclaim: str, doc_chunks: list[str], scorer) -> tuple[bool, float]:
-    """MiniCheck: score sub-claim against every chunk, max-pool. No retrieval gate."""
+def verify_subclaim(subclaim: str, doc_chunks: list[str], scorer) -> tuple[bool, float, int]:
+    """MiniCheck: score sub-claim against every chunk, max-pool. No retrieval gate.
+
+    Returns (supported, best_score, best_chunk_index) -- best_chunk_index is
+    the argmax position into doc_chunks, threaded through so callers can
+    resolve which chunk the verifier actually scored highest instead of
+    re-deriving evidence via an unrelated keyword-overlap heuristic.
+    """
     if not doc_chunks:
         raise ValueError("doc_chunks must not be empty")
     labels, probs, *_ = scorer.score(docs=doc_chunks, claims=[subclaim] * len(doc_chunks))
-    best = max(probs) if probs else 0.0
-    return best >= 0.5, float(best)
+    best_idx = probs.index(max(probs)) if probs else 0
+    best = probs[best_idx] if probs else 0.0
+    return best >= 0.5, float(best), best_idx
 
 
 def verify_subclaim_claude(subclaim: str, doc_chunks: list[str], client, model: str = "claude-haiku-4-5-20251001") -> bool:
@@ -36,12 +43,12 @@ def build_scorer(model_name: str = "flan-t5-large"):
 
 
 def make_minicheck_verifier(scorer):
-    """Wrap a MiniCheck scorer as a (subclaim, chunks) -> bool callable."""
-    return lambda sc, chunks: verify_subclaim(sc, chunks, scorer)[0]
+    """Wrap a MiniCheck scorer as a (subclaim, chunks) -> (supported, score, chunk_idx) callable."""
+    return lambda sc, chunks: verify_subclaim(sc, chunks, scorer)
 
 
 def make_claude_verifier(model: str = "claude-haiku-4-5-20251001"):
-    """Build an Anthropic client and return a (subclaim, chunks) -> bool callable."""
+    """Build an Anthropic client and return a (subclaim, chunks) -> (supported, None, None) callable."""
     import anthropic
     client = anthropic.Anthropic()
-    return lambda sc, chunks: verify_subclaim_claude(sc, chunks, client, model)
+    return lambda sc, chunks: (verify_subclaim_claude(sc, chunks, client, model), None, None)

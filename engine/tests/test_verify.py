@@ -18,13 +18,14 @@ def test_supported_in_any_chunk_is_supported():
     doc_chunks = ["irrelevant text", "the limit is $1,000 per item"]
     claim = "limit is $1,000"
     scorer = FakeScorer({(doc_chunks[1], claim): 0.92, (doc_chunks[0], claim): 0.03})
-    supported, prob = verify_subclaim(claim, doc_chunks, scorer)
+    supported, prob, idx = verify_subclaim(claim, doc_chunks, scorer)
     assert supported is True
     assert prob == 0.92  # max-pooled
+    assert idx == 1  # the chunk that actually contains the supporting sentence
 
 def test_unsupported_everywhere_is_unsupported():
     doc_chunks = ["a", "b"]
     claim = "invented coverage"
     scorer = FakeScorer({})
-    supported, prob = verify_subclaim(claim, doc_chunks, scorer)
+    supported, prob, idx = verify_subclaim(claim, doc_chunks, scorer)
     assert supported is False
