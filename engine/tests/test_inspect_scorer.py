@@ -53,7 +53,7 @@ def test_grounded_claim_scorer_matches_independent_groundedness_call(monkeypatch
     # so claim 1 -> grounded, claim 2 -> unsupported (no evidence for laptops here).
     monkeypatch.setattr(
         scorer_module, "make_minicheck_verifier",
-        lambda scorer: (lambda sc, chunks: "cameras" in sc),
+        lambda scorer: (lambda sc, chunks: ("cameras" in sc, 0.9, 0)),
     )
 
     state = _build_state(ai_output, sections)
@@ -74,7 +74,7 @@ def test_grounded_claim_scorer_routes_haiku_verifier_when_requested(monkeypatch)
         json.dumps([{"claim": "A claim.", "subclaims": ["a claim"]}])
     ))
     called = {}
-    monkeypatch.setattr(scorer_module, "make_claude_verifier", lambda: called.setdefault("used", True) and (lambda sc, chunks: True))
+    monkeypatch.setattr(scorer_module, "make_claude_verifier", lambda: called.setdefault("used", True) and (lambda sc, chunks: (True, None, None)))
 
     state = _build_state("A claim.", sections)
     scored = scorer_module.grounded_claim_scorer(verifier="haiku")

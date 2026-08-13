@@ -1,14 +1,24 @@
-from grounding.verify import verify_subclaim, chunk_document
+from grounding.verify import chunk_document
 from grounding.labelling import aggregate_label
-from grounding.localise import best_span
+from grounding.localise import best_span, span_from_chunk_index
 from grounding.numeric_check import numeric_mismatch
+
+CHUNK_MAX_CHARS = 1000  # shared with chunk_document's default; passed explicitly to avoid drift
 
 
 def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], verifier_fn) -> list[dict]:
     """Wire decompose -> verify -> aggregate_label -> localise -> claim record.
 
-    verifier_fn: callable(subclaim: str, chunks: list[str]) -> bool
+    verifier_fn: callable(subclaim: str, chunks: list[str]) -> tuple[bool, float | None, int | None]
     Use make_minicheck_verifier() or make_claude_verifier() from grounding.verify.
+    score/idx are None for verifiers with no per-chunk signal (Claude Haiku).
+
+    The evidence span for a grounded/partial claim is resolved from the
+    highest-scoring supported subclaim's verifier chunk index
+    (span_from_chunk_index), falling back to best_span()'s keyword-overlap
+    heuristic when no usable chunk index exists (Haiku verifier, or a chunk
+    that doesn't overlap any section) -- never a hard failure or an empty
+    span where one was previously found.
 
     A deterministic numeric-consistency check runs after aggregation: if the
     claim states a figure absent from its matched evidence, the label is
@@ -16,12 +26,19 @@ def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], v
     honest, factual rationale is generated. This check is not part of the
     RAGTruth-validated verifier itself -- see numeric_check.py's docstring.
     """
-    chunks = chunk_document(full_text)
+    chunks = chunk_document(full_text, max_chars=CHUNK_MAX_CHARS)
     out = []
     for i, dc in enumerate(decomposed):
-        supported = [verifier_fn(sc, chunks) for sc in dc["subclaims"]]
-        label = aggregate_label(supported)
-        span = None if label == "unsupported" else best_span(dc["text"], sections)
+        results = [verifier_fn(sc, chunks) for sc in dc["subclaims"]]
+        label = aggregate_label([r[0] for r in results])
+        span = None
+        if label != "unsupported":
+            candidates = [(score, idx) for supported, score, idx in results if supported and idx is not None]
+            if candidates:
+                _, best_idx = max(candidates, key=lambda c: c[0])
+                span = span_from_chunk_index(best_idx, full_text, sections, max_chars=CHUNK_MAX_CHARS)
+            if span is None:
+                span = best_span(dc["text"], sections)
         rationale = ""
         if span is not None:
             mismatch_value = numeric_mismatch(dc["text"], span["text"])
