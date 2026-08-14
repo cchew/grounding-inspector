@@ -1,3 +1,5 @@
+import json
+
 from grounding.verify import chunk_document, CHUNK_MAX_CHARS
 from grounding.labelling import aggregate_label
 from grounding.localise import best_span, span_from_chunk_index, section_char_ranges
@@ -43,7 +45,7 @@ def label_claims(
         claim_id = f"c{i+1}"
         if recorder is not None:
             with recorder.activity("verify", claim_id, verifier_model) as verify_act:
-                recorder.record_used(verify_act, claim_id)
+                recorder.record_used(verify_act, f"{claim_id}_claim")
                 recorder.record_used(verify_act, "source_doc")
                 results = [verifier_fn(sc, chunks) for sc in dc["subclaims"]]
         else:
@@ -72,9 +74,16 @@ def label_claims(
                 )
         if recorder is not None:
             recorder.record_generated(verify_act, f"{claim_id}_verdict", {
-                "label": label, "numeric_check_applied": mismatch_value is not None,
+                "label": label,
+                "numeric_check_applied": span is not None,
+                "numeric_mismatch_found": mismatch_value is not None,
             })
-            recorder.record_generated(verify_act, f"{claim_id}_verify_signal")
+            recorder.record_generated(verify_act, f"{claim_id}_verify_signal", {
+                "subclaim_results": json.dumps([
+                    {"supported": supported, "score": score, "chunk_idx": idx}
+                    for supported, score, idx in results
+                ]),
+            })
             if span is not None:
                 recorder.record_derived(f"evidence_span_{span['id']}", [f"{claim_id}_verify_signal"])
         out.append({

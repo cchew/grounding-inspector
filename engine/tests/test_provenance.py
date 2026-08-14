@@ -71,3 +71,12 @@ def test_serialize_writes_a_file_that_round_trips_via_provs_own_reader(tmp_path)
     # assumed (relation records count separately from the entities/activities
     # they connect).
     assert len(reloaded.get_records()) == 7
+
+
+def test_declare_entity_sets_attrs_without_any_relation():
+    rec = ProvenanceRecorder("fx1")
+    rec.declare_entity("source_doc", {"source_sha256": "abc123"})
+    doc = json.loads(rec.doc.serialize(format="json"))
+    assert doc["entity"]["source_doc"]["source_sha256"] == "abc123"
+    assert doc.get("used", {}) == {}
+    assert doc.get("wasGeneratedBy", {}) == {}

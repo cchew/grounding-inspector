@@ -15,6 +15,7 @@ from grounding.verify import build_scorer, make_minicheck_verifier
 from grounding.pipeline import label_claims
 from grounding.fixturegen import build_fixture
 from grounding.provenance import ProvenanceRecorder
+from grounding.versioning import pipeline_commit, source_sha256
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -46,7 +47,7 @@ SCORECARD_PLACEHOLDER = {
 
 def run():
     client = build_client()
-    scorer = build_scorer()
+    scorer = build_scorer(VERIFIER_MODEL)
     verifier_fn = make_minicheck_verifier(scorer)
 
     for fid, paths in SOURCES.items():
@@ -57,6 +58,7 @@ def run():
         full_text = " ".join(s["text"] for s in sections)
 
         recorder = ProvenanceRecorder(fid)
+        recorder.declare_entity("source_doc", {"source_sha256": source_sha256(sections)})
 
         # Decompose (run once, freeze output)
         frozen_path = paths["frozen_decomp"]
@@ -82,18 +84,21 @@ def run():
             recorder=recorder, verifier_model=VERIFIER_MODEL,
         )
 
+        # Build and write fixture -- before serializing the PROV trace, so a
+        # schema-validation failure (build_fixture raises) never leaves an
+        # orphan trace describing a fixture that was never actually written.
+        fx = build_fixture(fid, source, ai_output, claims, SCORECARD_PLACEHOLDER)
+        out_path = ROOT / "fixtures" / f"{fid}.json"
+        out_path.write_text(json.dumps(fx, indent=2))
+        print(f"[{fid}] wrote {out_path}")
+
+        recorder.declare_entity("scorecard", {"pipeline_commit": pipeline_commit()})
         for c in claims:
             recorder.record_derived("scorecard", [f"{c['id']}_verdict"])
         prov_path = ROOT / "fixtures" / "prov" / f"{fid}.prov.json"
         prov_path.parent.mkdir(parents=True, exist_ok=True)
         recorder.serialize(prov_path)
         print(f"[{fid}] wrote {prov_path}")
-
-        # Build and write fixture
-        fx = build_fixture(fid, source, ai_output, claims, SCORECARD_PLACEHOLDER)
-        out_path = ROOT / "fixtures" / f"{fid}.json"
-        out_path.write_text(json.dumps(fx, indent=2))
-        print(f"[{fid}] wrote {out_path}")
 
 
 if __name__ == "__main__":

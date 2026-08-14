@@ -1,8 +1,8 @@
-# engine/tests/test_pipeline.py
 import json
 
 from grounding.pipeline import label_claims
 from grounding.localise import best_span
+from grounding.provenance import ProvenanceRecorder
 
 SECTIONS = [
     {"id": "s1", "page": 1, "char_start": 0, "char_end": 50,
@@ -15,11 +15,6 @@ def always_true(subclaim, chunks):
 
 
 def test_numeric_mismatch_downgrades_grounded_to_unsupported():
-    # Claim text shares enough vocabulary with the section ("laptop", "computer")
-    # for best_span()'s token-overlap threshold to find a match even though the
-    # mismatched number itself ($5 vs $4/$3) contributes no shared token -- a
-    # claim using only "laptops... $5,000" without "Computer" scores 0.125,
-    # just under best_span()'s 0.15 threshold, and no span is found at all.
     decomposed = [{"text": "Laptop Computer is covered for up to $5,000.", "subclaims": ["laptop computer covered to $5,000"]}]
     claims = label_claims(decomposed, "Camera $4,000; Laptop Computer $4,000; Tablet $3,000.", SECTIONS, always_true)
     assert claims[0]["label"] == "unsupported"
@@ -47,11 +42,7 @@ def test_mixed_subclaims_with_numeric_mismatch_stays_partial():
 
 
 def test_paraphrase_near_decoy_resolves_to_correct_section():
-    """Reproduces FUTURE.md's exact failure mode: a claim paraphrased from
-    the true source section (low keyword overlap) sitting near a decoy
-    section (high keyword overlap, not actually the support). The verifier's
-    chunk index must win over best_span()'s keyword heuristic."""
-    filler = "x" * 990  # push the decoy+source sections past chunk 0's 1000-char boundary
+    filler = "x" * 990
     decoy = "Coverage for delayed baggage lasts five days from the date of delay unless a claim is not lodged."
     source = "Baggage delay compensation applies once the interruption continues for five days or more before resolution."
     sections = [
@@ -64,12 +55,10 @@ def test_paraphrase_near_decoy_resolves_to_correct_section():
     decomposed = [{"text": claim, "subclaims": [claim]}]
 
     decoy_start = len(filler)
-    # sanity check the fixture: decoy must straddle the chunk-0/chunk-1 boundary
-    # at char 1000, otherwise this test isn't exercising the failure mode.
     assert decoy_start < 1000 <= decoy_start + len(decoy)
 
     naive_span = best_span(claim, sections)
-    assert naive_span["id"] == "decoyB"  # confirms the keyword-overlap heuristic alone gets this wrong
+    assert naive_span["id"] == "decoyB"
 
     def verifier_fn(subclaim, chunks):
         source_chunk_idx = next(i for i, c in enumerate(chunks) if source in c)
@@ -77,9 +66,6 @@ def test_paraphrase_near_decoy_resolves_to_correct_section():
 
     claims = label_claims(decomposed, full_text, sections, verifier_fn)
     assert claims[0]["evidence_span_ids"] == ["sourceA"]
-
-
-from grounding.provenance import ProvenanceRecorder
 
 
 def test_recorder_none_leaves_output_unchanged():
@@ -101,7 +87,9 @@ def test_recorder_captures_verify_activity_and_verdict_and_signal():
     assert "verify_c1" in trace["activity"]
     assert "flan-t5-large" in trace["agent"]
     assert trace["entity"]["c1_verdict"]["label"] == "grounded"
-    assert trace["entity"]["c1_verdict"]["numeric_check_applied"] is False
+    assert trace["entity"]["c1_verdict"]["numeric_check_applied"] is True
+    assert trace["entity"]["c1_verdict"]["numeric_mismatch_found"] is False
+    assert "subclaim_results" in trace["entity"]["c1_verify_signal"]
 
     generated_by = {r["prov:entity"]: r["prov:activity"] for r in trace["wasGeneratedBy"].values()}
     assert generated_by["c1_verdict"] == "verify_c1"
@@ -109,9 +97,6 @@ def test_recorder_captures_verify_activity_and_verdict_and_signal():
 
 
 def test_recorder_derives_evidence_span_from_verify_signal_not_used_by_verify():
-    # The causality fix from the spec: the evidence span isn't known until
-    # after the verify loop's results are in hand, so it must never appear
-    # in Verify's own `used` set -- only as wasDerivedFrom the verify_signal.
     decomposed = [{"text": "Cameras are covered for up to $4,000.", "subclaims": ["cameras covered to $4,000"]}]
     doc = "Camera $4,000; Laptop Computer $4,000; Tablet $3,000."
     recorder = ProvenanceRecorder("fx")
@@ -124,5 +109,5 @@ def test_recorder_derives_evidence_span_from_verify_signal_not_used_by_verify():
 
     used_pairs = {(r["prov:activity"], r["prov:entity"]) for r in trace["used"].values()}
     assert ("verify_c1", "evidence_span_s1") not in used_pairs
-    assert ("verify_c1", "c1") in used_pairs  # the claim itself IS used
+    assert ("verify_c1", "c1_claim") in used_pairs
     assert ("verify_c1", "source_doc") in used_pairs
