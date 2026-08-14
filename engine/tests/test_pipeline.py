@@ -1,4 +1,6 @@
 # engine/tests/test_pipeline.py
+import json
+
 from grounding.pipeline import label_claims
 from grounding.localise import best_span
 
@@ -75,3 +77,52 @@ def test_paraphrase_near_decoy_resolves_to_correct_section():
 
     claims = label_claims(decomposed, full_text, sections, verifier_fn)
     assert claims[0]["evidence_span_ids"] == ["sourceA"]
+
+
+from grounding.provenance import ProvenanceRecorder
+
+
+def test_recorder_none_leaves_output_unchanged():
+    decomposed = [{"text": "Cameras are covered for up to $4,000.", "subclaims": ["cameras covered to $4,000"]}]
+    doc = "Camera $4,000; Laptop Computer $4,000; Tablet $3,000."
+    without_recorder = label_claims(decomposed, doc, SECTIONS, always_true)
+    with_recorder = label_claims(decomposed, doc, SECTIONS, always_true, recorder=ProvenanceRecorder("fx"), verifier_model="flan-t5-large")
+    assert with_recorder == without_recorder
+
+
+def test_recorder_captures_verify_activity_and_verdict_and_signal():
+    decomposed = [{"text": "Cameras are covered for up to $4,000.", "subclaims": ["cameras covered to $4,000"]}]
+    doc = "Camera $4,000; Laptop Computer $4,000; Tablet $3,000."
+    recorder = ProvenanceRecorder("fx")
+    claims = label_claims(decomposed, doc, SECTIONS, always_true, recorder=recorder, verifier_model="flan-t5-large")
+    assert claims[0]["label"] == "grounded"
+
+    trace = json.loads(recorder.doc.serialize(format="json"))
+    assert "verify_c1" in trace["activity"]
+    assert "flan-t5-large" in trace["agent"]
+    assert trace["entity"]["c1_verdict"]["label"] == "grounded"
+    assert trace["entity"]["c1_verdict"]["numeric_check_applied"] is False
+
+    generated_by = {r["prov:entity"]: r["prov:activity"] for r in trace["wasGeneratedBy"].values()}
+    assert generated_by["c1_verdict"] == "verify_c1"
+    assert generated_by["c1_verify_signal"] == "verify_c1"
+
+
+def test_recorder_derives_evidence_span_from_verify_signal_not_used_by_verify():
+    # The causality fix from the spec: the evidence span isn't known until
+    # after the verify loop's results are in hand, so it must never appear
+    # in Verify's own `used` set -- only as wasDerivedFrom the verify_signal.
+    decomposed = [{"text": "Cameras are covered for up to $4,000.", "subclaims": ["cameras covered to $4,000"]}]
+    doc = "Camera $4,000; Laptop Computer $4,000; Tablet $3,000."
+    recorder = ProvenanceRecorder("fx")
+    claims = label_claims(decomposed, doc, SECTIONS, always_true, recorder=recorder, verifier_model="flan-t5-large")
+    assert claims[0]["evidence_span_ids"] == ["s1"]
+
+    trace = json.loads(recorder.doc.serialize(format="json"))
+    derived = {r["prov:generatedEntity"]: r["prov:usedEntity"] for r in trace["wasDerivedFrom"].values()}
+    assert derived["evidence_span_s1"] == "c1_verify_signal"
+
+    used_pairs = {(r["prov:activity"], r["prov:entity"]) for r in trace["used"].values()}
+    assert ("verify_c1", "evidence_span_s1") not in used_pairs
+    assert ("verify_c1", "c1") in used_pairs  # the claim itself IS used
+    assert ("verify_c1", "source_doc") in used_pairs
