@@ -1,9 +1,7 @@
-from grounding.verify import chunk_document
+from grounding.verify import chunk_document, CHUNK_MAX_CHARS
 from grounding.labelling import aggregate_label
-from grounding.localise import best_span, span_from_chunk_index
+from grounding.localise import best_span, span_from_chunk_index, section_char_ranges
 from grounding.numeric_check import numeric_mismatch
-
-CHUNK_MAX_CHARS = 1000  # shared with chunk_document's default; passed explicitly to avoid drift
 
 
 def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], verifier_fn) -> list[dict]:
@@ -27,16 +25,20 @@ def label_claims(decomposed: list[dict], full_text: str, sections: list[dict], v
     RAGTruth-validated verifier itself -- see numeric_check.py's docstring.
     """
     chunks = chunk_document(full_text, max_chars=CHUNK_MAX_CHARS)
+    section_ranges = section_char_ranges(sections, full_text)
     out = []
     for i, dc in enumerate(decomposed):
         results = [verifier_fn(sc, chunks) for sc in dc["subclaims"]]
         label = aggregate_label([r[0] for r in results])
         span = None
         if label != "unsupported":
-            candidates = [(score, idx) for supported, score, idx in results if supported and idx is not None]
+            candidates = [(score, idx) for supported, score, idx in results if supported and score is not None and idx is not None]
             if candidates:
                 _, best_idx = max(candidates, key=lambda c: c[0])
-                span = span_from_chunk_index(best_idx, full_text, sections, max_chars=CHUNK_MAX_CHARS)
+                span = span_from_chunk_index(
+                    best_idx, full_text, sections, dc["text"],
+                    max_chars=CHUNK_MAX_CHARS, section_ranges=section_ranges,
+                )
             if span is None:
                 span = best_span(dc["text"], sections)
         rationale = ""

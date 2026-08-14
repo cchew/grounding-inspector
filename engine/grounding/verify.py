@@ -5,7 +5,10 @@ _VERIFY_SYSTEM = (
 )
 
 
-def chunk_document(text: str, max_chars: int = 1000) -> list[str]:
+CHUNK_MAX_CHARS = 1000
+
+
+def chunk_document(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)] or [""]
 
 

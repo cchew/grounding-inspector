@@ -29,3 +29,4 @@ def test_unsupported_everywhere_is_unsupported():
     scorer = FakeScorer({})
     supported, prob, idx = verify_subclaim(claim, doc_chunks, scorer)
     assert supported is False
+    assert idx == 0  # documents the all-zero-probs tie-break (first index wins)
