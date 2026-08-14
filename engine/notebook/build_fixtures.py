@@ -14,8 +14,12 @@ from grounding.decompose import build_client, decompose_output
 from grounding.verify import build_scorer, make_minicheck_verifier
 from grounding.pipeline import label_claims
 from grounding.fixturegen import build_fixture
+from grounding.provenance import ProvenanceRecorder
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+DECOMPOSE_MODEL = "llama3"
+VERIFIER_MODEL = "flan-t5-large"
 
 SOURCES = {
     "travel-pds-01": {
@@ -52,21 +56,38 @@ def run():
         sections = source["sections"]
         full_text = " ".join(s["text"] for s in sections)
 
+        recorder = ProvenanceRecorder(fid)
+
         # Decompose (run once, freeze output)
         frozen_path = paths["frozen_decomp"]
-        if frozen_path.exists():
-            print(f"[{fid}] using frozen decomposition")
-            decomposed = json.loads(frozen_path.read_text())
-        else:
-            print(f"[{fid}] decomposing via Ollama...")
-            decomposed = decompose_output(ai_output, client=client, model="llama3")
-            frozen_path.parent.mkdir(parents=True, exist_ok=True)
-            frozen_path.write_text(json.dumps(decomposed, indent=2))
-            print(f"[{fid}] frozen to {frozen_path}")
+        with recorder.activity("decompose", fid, DECOMPOSE_MODEL) as decompose_act:
+            recorder.record_used(decompose_act, "source_doc")
+            recorder.record_used(decompose_act, "ai_output")
+            if frozen_path.exists():
+                print(f"[{fid}] using frozen decomposition")
+                decomposed = json.loads(frozen_path.read_text())
+            else:
+                print(f"[{fid}] decomposing via Ollama...")
+                decomposed = decompose_output(ai_output, client=client, model=DECOMPOSE_MODEL)
+                frozen_path.parent.mkdir(parents=True, exist_ok=True)
+                frozen_path.write_text(json.dumps(decomposed, indent=2))
+                print(f"[{fid}] frozen to {frozen_path}")
+        for i in range(len(decomposed)):
+            recorder.record_generated(decompose_act, f"c{i+1}_claim")
 
         # Verify claims
         print(f"[{fid}] verifying {len(decomposed)} claims...")
-        claims = label_claims(decomposed, full_text, sections, verifier_fn)
+        claims = label_claims(
+            decomposed, full_text, sections, verifier_fn,
+            recorder=recorder, verifier_model=VERIFIER_MODEL,
+        )
+
+        for c in claims:
+            recorder.record_derived("scorecard", [f"{c['id']}_verdict"])
+        prov_path = ROOT / "fixtures" / "prov" / f"{fid}.prov.json"
+        prov_path.parent.mkdir(parents=True, exist_ok=True)
+        recorder.serialize(prov_path)
+        print(f"[{fid}] wrote {prov_path}")
 
         # Build and write fixture
         fx = build_fixture(fid, source, ai_output, claims, SCORECARD_PLACEHOLDER)
