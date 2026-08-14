@@ -60,7 +60,7 @@ def span_from_chunk_index(
         section_ranges = section_char_ranges(sections, full_text)
     chunk_start, chunk_end = chunk_idx * max_chars, chunk_idx * max_chars + max_chars
     fully_contained: list[dict] = []
-    partial: list[tuple[int, dict]] = []
+    all_candidates: list[tuple[int, dict]] = []
     for s, r in zip(sections, section_ranges):
         if r is None:
             continue
@@ -68,14 +68,11 @@ def span_from_chunk_index(
         overlap = max(0, min(chunk_end, end) - max(chunk_start, start))
         if overlap <= 0:
             continue
+        all_candidates.append((overlap, s))
         if overlap == (end - start):
             fully_contained.append(s)
-        else:
-            partial.append((overlap, s))
     if len(fully_contained) > 1:
         return best_span(claim_text, fully_contained)
-    if fully_contained:
-        return fully_contained[0]
-    if partial:
-        return max(partial, key=lambda p: p[0])[1]
+    if all_candidates:
+        return max(all_candidates, key=lambda c: c[0])[1]
     return None

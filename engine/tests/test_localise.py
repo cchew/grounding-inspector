@@ -72,3 +72,19 @@ def test_span_from_chunk_index_breaks_ties_by_keyword_relevance_when_chunk_dwarf
     claim = "Overseas medical expenses are covered up to $10,000,000."
     span = span_from_chunk_index(0, full_text, sections, claim, max_chars=1000)
     assert span["id"] == "medical"  # not "baggage", which is the longest section
+
+def test_span_from_chunk_index_sole_fully_contained_section_still_competes_on_overlap():
+    # When at most one section is fully contained, raw overlap must still be
+    # compared against partially-overlapping sections, not returned unconditionally
+    # just because it's the only fully-contained one -- a tiny fully-contained
+    # section should not beat a large section that has far more of its own text
+    # inside the same chunk.
+    sections = [
+        {"id": "tiny", "page": 1, "text": "X" * 10},
+        {"id": "large", "page": 2, "text": "Y" * 1490},
+    ]
+    full_text = "".join(s["text"] for s in sections)  # tiny spans 0-10, large spans 10-1500
+    # chunk 0 (max_chars=1000) fully contains "tiny" (overlap 10) and partially
+    # overlaps "large" (990 of its 1490 chars) -- "large" has the greater overlap.
+    span = span_from_chunk_index(0, full_text, sections, "placeholder claim", max_chars=1000)
+    assert span["id"] == "large"
