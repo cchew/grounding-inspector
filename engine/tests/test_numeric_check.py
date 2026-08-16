@@ -79,6 +79,16 @@ def test_select_policy_plain_dollar_figure_selects_exact():
     assert policy == "exact"
     assert params == {}
 
+def test_select_policy_unrelated_alias_word_elsewhere_does_not_misfire():
+    # Regression: an alias-looking token ("2K") elsewhere in the sentence
+    # must not hijack policy selection for a different, unrelated number
+    # (the 15%). The alias suffix must be directly attached to the number
+    # actually being checked, per spec section 1 rule 2 ("directly attached
+    # to the number") -- a whole-text search doesn't enforce that.
+    policy, params = select_policy("The co-payment is 15%, up from 2K last year.", 15.0)
+    assert policy == "rounded"
+    assert params == {"decimals": 1}
+
 # --- check_numeric_claim (replaces numeric_mismatch) ----------------------
 
 def test_verified_when_claim_number_present_in_evidence():

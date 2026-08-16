@@ -5,9 +5,25 @@ from typing import Literal
 _MONEY_RE = re.compile(r"\$\s?([\d,]+(?:\.\d+)?)")
 _PERCENT_RE = re.compile(r"(\d+(?:\.\d+)?)%")
 _COUNT_RE = re.compile(r"\b(\d+)\s*(?:days?|months?|years?)\b")
-_ALIAS_SUFFIX_RE = re.compile(r"\d(?:\.\d+)?\s*(K|M|thousand|million)\b")
+_ALIAS_SUFFIX_AFTER_RE = re.compile(r"\s*(K|M|thousand|million)\b")
 _QUALIFIERS = {"about", "approximately", "roughly"}
 _ALIAS_SCALES = {"K": 1e3, "thousand": 1e3, "M": 1e6, "million": 1e6}
+
+
+def _find_claim_span(claim_text: str):
+    """Locate the single matched numeric span in claim_text (money, percent,
+    or count) and return its match object -- not just the value -- so
+    select_policy can inspect text immediately following the specific
+    number being checked, rather than searching the whole claim for an
+    alias-looking token that might belong to a different, unrelated number.
+    Assumes check_numeric_claim's precondition of exactly one numeric span
+    already holds; tries each extraction regex in turn and returns the
+    first (and, under that precondition, only) match."""
+    for regex in (_MONEY_RE, _PERCENT_RE, _COUNT_RE):
+        m = regex.search(claim_text)
+        if m:
+            return m
+    return None
 
 
 def extract_numbers(text: str) -> list[float]:
@@ -90,9 +106,11 @@ def select_policy(claim_text: str, claim_value: float) -> tuple[str, dict]:
     words = set(re.findall(r"[a-z]+", claim_text.lower()))
     if words & _QUALIFIERS:
         return "tolerance", {"rel_tolerance": 0.1}
-    alias_match = _ALIAS_SUFFIX_RE.search(claim_text)
-    if alias_match:
-        return "alias", {"scale": _ALIAS_SCALES[alias_match.group(1)]}
+    span = _find_claim_span(claim_text)
+    if span is not None:
+        suffix_match = _ALIAS_SUFFIX_AFTER_RE.match(claim_text, span.end())
+        if suffix_match:
+            return "alias", {"scale": _ALIAS_SCALES[suffix_match.group(1)]}
     if "%" in claim_text:
         return "rounded", {"decimals": 1}
     return "exact", {}
