@@ -3,7 +3,6 @@ import json
 from grounding.pipeline import label_claims
 from grounding.localise import best_span
 from grounding.provenance import ProvenanceRecorder
-from grounding.numeric_check import NotChecked
 
 SECTIONS = [
     {"id": "s1", "page": 1, "char_start": 0, "char_end": 50,

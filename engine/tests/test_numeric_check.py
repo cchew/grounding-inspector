@@ -79,6 +79,27 @@ def test_select_policy_plain_dollar_figure_selects_exact():
     assert policy == "exact"
     assert params == {}
 
+def test_select_policy_qualifier_far_from_number_does_not_misfire():
+    # Regression (final review finding #3): a qualifier modifying an
+    # unrelated quantity earlier in the sentence ("approximately 24 hours")
+    # must not loosen the check on a different, unrelated dollar figure
+    # ($250) elsewhere in the same sentence. Without anchoring, this would
+    # wrongly select tolerance and let a claim overstating the true figure
+    # by up to 10% pass as Verified -- the false-negative direction, which
+    # is the dangerous one for a fail-closed design.
+    policy, _ = select_policy(
+        "Cover begins approximately 24 hours before departure, with an excess of $250.",
+        250.0,
+    )
+    assert policy == "exact"
+
+def test_select_policy_stray_percent_character_elsewhere_does_not_misfire():
+    # Regression (final review finding #4): a "%" elsewhere in the sentence
+    # must not loosen a dollar claim's check to the rounded policy just
+    # because it shares the sentence with an unrelated percent sign.
+    policy, _ = select_policy("The excess is $1,000.04 after the % adjustment.", 1000.04)
+    assert policy == "exact"
+
 def test_select_policy_unrelated_alias_word_elsewhere_does_not_misfire():
     # Regression: an alias-looking token ("2K") elsewhere in the sentence
     # must not hijack policy selection for a different, unrelated number
@@ -128,6 +149,13 @@ def test_verified_alias_scaled_dollar_figure():
     evidence = "The excess amount is $1,500."
     assert check_numeric_claim(claim, evidence) == Verified()
 
+def test_check_numeric_claim_qualifier_far_from_number_still_contradicts_wrong_figure():
+    # End-to-end version of the select_policy regression above: confirms the
+    # fix actually changes the verdict, not just the policy label.
+    claim = "Cover begins approximately 24 hours before departure, with an excess of $250."
+    evidence = "The excess is $275."
+    assert check_numeric_claim(claim, evidence) == Contradicted(claim_value=250.0, policy="exact")
+
 # --- format_mismatch_rationale ---------------------------------------------
 
 def test_format_mismatch_rationale_dollar_claim():
@@ -142,3 +170,29 @@ def test_format_mismatch_rationale_percentage_claim():
     text = format_mismatch_rationale("The co-payment is 15%.", result)
     assert "15%" in text
     assert "rounded" in text
+
+def test_format_mismatch_rationale_alias_claim_renders_scaled_value():
+    # Regression (final review finding #1): the rationale must describe the
+    # effective dollar amount the claim stated ($1,500), not the pre-scale
+    # number check_alias() operates on internally (1.5).
+    result = Contradicted(claim_value=1.5, policy="alias", scale=1e3)
+    text = format_mismatch_rationale("Excess of $1.5K applies.", result)
+    assert "$1,500" in text
+    assert "$2" not in text
+    assert "alias" in text
+
+def test_contradicted_alias_result_carries_scale_end_to_end():
+    claim = "Excess of $1.5K applies."
+    evidence = "The excess amount is $1,400."
+    result = check_numeric_claim(claim, evidence)
+    assert result == Contradicted(claim_value=1.5, policy="alias", scale=1e3)
+    text = format_mismatch_rationale(claim, result)
+    assert "$1,500" in text
+
+def test_format_mismatch_rationale_dollar_claim_with_cents():
+    # Regression (final review finding #2): dropping cents made the
+    # rationale claim a figure ($1,000) that DOES appear in the evidence,
+    # contradicting itself. The claim's actual figure ($1,000.50) must render.
+    result = Contradicted(claim_value=1000.5, policy="exact")
+    text = format_mismatch_rationale("The excess is $1,000.50.", result)
+    assert "$1,000.50" in text
