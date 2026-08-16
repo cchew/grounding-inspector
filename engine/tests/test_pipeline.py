@@ -3,6 +3,7 @@ import json
 from grounding.pipeline import label_claims
 from grounding.localise import best_span
 from grounding.provenance import ProvenanceRecorder
+from grounding.numeric_check import NotChecked
 
 SECTIONS = [
     {"id": "s1", "page": 1, "char_start": 0, "char_end": 50,
@@ -19,6 +20,7 @@ def test_numeric_mismatch_downgrades_grounded_to_unsupported():
     claims = label_claims(decomposed, "Camera $4,000; Laptop Computer $4,000; Tablet $3,000.", SECTIONS, always_true)
     assert claims[0]["label"] == "unsupported"
     assert "$5,000" in claims[0]["rationale"]
+    assert "exact" in claims[0]["rationale"]
     assert "automated numeric check" in claims[0]["rationale"]
 
 
@@ -39,6 +41,28 @@ def test_mixed_subclaims_with_numeric_mismatch_stays_partial():
     claims = label_claims(decomposed, "Camera $4,000; Laptop Computer $4,000; Tablet $3,000.", SECTIONS, half_true)
     assert claims[0]["label"] == "partial"
     assert "$5,000" in claims[0]["rationale"]
+
+
+def test_percentage_claim_mismatch_downgrades_with_rounded_policy():
+    sections = [
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 40,
+         "text": "The co-payment rate is 10.0% of the claim amount."},
+    ]
+    decomposed = [{"text": "The co-payment is 15%.", "subclaims": ["co-payment is 15%"]}]
+    claims = label_claims(decomposed, "The co-payment rate is 10.0% of the claim amount.", sections, always_true)
+    assert claims[0]["label"] == "unsupported"
+    assert "15%" in claims[0]["rationale"]
+    assert "rounded" in claims[0]["rationale"]
+
+
+def test_multiple_numeric_spans_in_claim_leaves_label_and_rationale_untouched():
+    decomposed = [{
+        "text": "Cameras are covered for $4,000 or $3,000 depending on plan.",
+        "subclaims": ["cameras covered for $4,000 or $3,000 depending on plan"],
+    }]
+    claims = label_claims(decomposed, "Camera $4,000; Laptop Computer $4,000; Tablet $3,000.", SECTIONS, always_true)
+    assert claims[0]["label"] == "grounded"
+    assert claims[0]["rationale"] == ""
 
 
 def test_paraphrase_near_decoy_resolves_to_correct_section():

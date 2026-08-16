@@ -13,7 +13,7 @@ Usage:
 import json
 import pathlib
 
-from grounding.numeric_check import numeric_mismatch
+from grounding.numeric_check import check_numeric_claim, Contradicted, format_mismatch_rationale
 from grounding.versioning import pipeline_commit, source_sha256
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -43,17 +43,14 @@ def patch_fixture(fixture_id: str) -> None:
         if key not in NUMERIC_FIX_TARGETS:
             continue
         evidence_text = "".join(sections_by_id[sid] for sid in claim["evidence_span_ids"])
-        mismatch_value = numeric_mismatch(claim["text"], evidence_text)
-        if mismatch_value is None:
+        result = check_numeric_claim(claim["text"], evidence_text)
+        if not isinstance(result, Contradicted):
             raise RuntimeError(
                 f"{fixture_id}/{claim['id']}: expected a numeric mismatch to be "
-                f"detected (confirmed during planning) but numeric_mismatch() "
-                f"returned None -- investigate before proceeding."
+                f"detected (confirmed during planning) but check_numeric_claim() "
+                f"returned {result!r} -- investigate before proceeding."
             )
-        claim["rationale"] = (
-            f"Claim states ${mismatch_value:,.0f}; this figure does not appear "
-            f"in the matched evidence (automated numeric check)."
-        )
+        claim["rationale"] = format_mismatch_rationale(claim["text"], result)
         print(f"[{fixture_id}] {claim['id']}: rationale updated -> {claim['rationale']!r}")
 
     fixture["scorecard"]["pipeline_commit"] = pipeline_commit()

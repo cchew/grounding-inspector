@@ -3,7 +3,7 @@ import json
 from grounding.verify import chunk_document, CHUNK_MAX_CHARS
 from grounding.labelling import aggregate_label
 from grounding.localise import best_span, span_from_chunk_index, section_char_ranges
-from grounding.numeric_check import numeric_mismatch
+from grounding.numeric_check import check_numeric_claim, Contradicted, format_mismatch_rationale
 from grounding.provenance import ProvenanceRecorder
 
 
@@ -63,20 +63,17 @@ def label_claims(
             if span is None:
                 span = best_span(dc["text"], sections)
         rationale = ""
-        mismatch_value = None
+        numeric_result = None
         if span is not None:
-            mismatch_value = numeric_mismatch(dc["text"], span["text"])
-            if mismatch_value is not None:
+            numeric_result = check_numeric_claim(dc["text"], span["text"])
+            if isinstance(numeric_result, Contradicted):
                 label = "unsupported" if label == "grounded" else "partial"
-                rationale = (
-                    f"Claim states ${mismatch_value:,.0f}; this figure does not "
-                    f"appear in the matched evidence (automated numeric check)."
-                )
+                rationale = format_mismatch_rationale(dc["text"], numeric_result)
         if recorder is not None:
             recorder.record_generated(verify_act, f"{claim_id}_verdict", {
                 "label": label,
                 "numeric_check_applied": span is not None,
-                "numeric_mismatch_found": mismatch_value is not None,
+                "numeric_mismatch_found": isinstance(numeric_result, Contradicted),
             })
             recorder.record_generated(verify_act, f"{claim_id}_verify_signal", {
                 "subclaim_results": json.dumps([
