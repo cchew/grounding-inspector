@@ -79,6 +79,34 @@
         "verifier_model": { "type": "string" },
         "source_sha256": { "type": "string" }
       }
+    },
+    "omissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["method", "global_score", "flagged_sections", "hyperparameters", "validated", "caveat"],
+        "additionalProperties": false,
+        "properties": {
+          "method": { "enum": ["embedkde"] },
+          "global_score": { "type": "number" },
+          "flagged_sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["section_id", "score", "top_tokens"],
+              "additionalProperties": false,
+              "properties": {
+                "section_id": { "type": "string" },
+                "score": { "type": "number" },
+                "top_tokens": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "hyperparameters": { "type": "object" },
+          "validated": { "type": "boolean" },
+          "caveat": { "type": "string" }
+        }
+      }
     }
   }
 }
