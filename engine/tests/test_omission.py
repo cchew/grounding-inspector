@@ -99,10 +99,14 @@ def test_flags_section_semantically_absent_from_output():
 
 def test_no_flags_when_all_scores_identical():
     # Every token maps to the exact same vector, so every section's
-    # aggregated score comes out identical (std=0 across sections) --
-    # this exercises the `std > 0` guard, not just "nothing crosses the
-    # threshold" (a std>0-but-below-threshold case wouldn't prove the
-    # guard branch runs at all).
+    # aggregated score comes out identical (std=0 across sections) and
+    # nothing gets flagged. Note: this does NOT isolate the `std > 0` guard
+    # as a distinct branch -- when std==0, mean equals every score exactly,
+    # so `score > mean + threshold_std * std` already reduces to
+    # `score > score` (always False) with or without the guard. The guard
+    # is provably redundant for this case; see the fix report appended
+    # 2026-08-18 for the reasoning. This test verifies the observable
+    # behavior (uniform scores -> no flags), not the guard's necessity.
     same_vec = np.array([0.0, 0.0])
     embedder = FakeEmbedder({"cat": same_vec, "dog": same_vec, "bird": same_vec})
     sections = [
@@ -111,3 +115,35 @@ def test_no_flags_when_all_scores_identical():
     ]
     result = check_omissions_embedkde(sections, "bird", embedder, pca_components=1, kde_bandwidth=1.0)
     assert result["flagged_sections"] == []
+
+
+def test_top_tokens_align_with_scores_when_section_has_oov_token():
+    # An OOV token ("oovword") sits between two in-vocabulary tokens in s1's
+    # text. embed_tokens/_embed_with_survivors silently drops it, so the
+    # embedding/score array has only 2 rows for a 3-token section. Reported
+    # top_tokens must be derived from the surviving-token list (index-aligned
+    # with scores), not the raw, uncompacted tokenize() output -- otherwise
+    # the dropped OOV token can appear in top_tokens and the true top scorer
+    # can be shifted out.
+    embedder = FakeEmbedder({
+        "output": np.array([0.0, 0.0]),
+        "word": np.array([0.1, 0.1]),
+        "alpha": np.array([0.0, 0.1]),
+        "beta": np.array([0.1, 0.0]),
+        "zulu": np.array([10.0, 10.0]),
+    })
+    sections = [
+        {"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "alpha oovword zulu"},
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 0, "text": "beta output"},
+    ]
+    ai_output = "output word"
+
+    result = check_omissions_embedkde(
+        sections, ai_output, embedder, pca_components=2, kde_bandwidth=1.0, threshold_std=0.5,
+    )
+
+    flagged_ids = [f["section_id"] for f in result["flagged_sections"]]
+    assert "s1" in flagged_ids
+    s1 = next(f for f in result["flagged_sections"] if f["section_id"] == "s1")
+    assert "oovword" not in s1["top_tokens"]
+    assert s1["top_tokens"][0] == "zulu"  # true highest scorer, not shifted by the dropped OOV token

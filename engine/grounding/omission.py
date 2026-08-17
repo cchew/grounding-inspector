@@ -74,6 +74,18 @@ _CAVEAT = (
 )
 
 
+def _embed_with_survivors(tokens: list[str], embedder: Embedder) -> tuple[list[str], np.ndarray]:
+    """Like embed_tokens, but also returns the surviving (non-OOV) tokens in
+    the same order as the embedding rows. embed_tokens silently drops OOV
+    tokens, which otherwise misaligns any score index derived from its output
+    against the original, uncompacted token list -- this keeps token and
+    score indices in lockstep."""
+    survivors = [tok for tok in tokens if embedder(tok) is not None]
+    if not survivors:
+        return survivors, np.empty((0, 0))
+    return survivors, np.vstack([embedder(tok) for tok in survivors])
+
+
 def check_omissions_embedkde(
     source_sections: list[dict], ai_output: str, embedder: Embedder,
     pca_components: int = 16, kde_bandwidth: float = 1.0, threshold_std: float = 1.5,
@@ -95,13 +107,13 @@ def check_omissions_embedkde(
     section_results: list[tuple[str, float, list[str]]] = []
     for section in source_sections:
         tokens = tokenize(section["text"])
-        source_emb = embed_tokens(tokens, embedder)
+        surviving_tokens, source_emb = _embed_with_survivors(tokens, embedder)
         if source_emb.shape[0] == 0 or output_emb.shape[0] == 0:
             section_results.append((section["id"], 0.0, []))
             continue
         scores = compute_om_scores(source_emb, output_emb, pca_components, kde_bandwidth)
         top_idx = np.argsort(scores)[::-1][:3]
-        top_tokens = [tokens[i] for i in top_idx]
+        top_tokens = [surviving_tokens[i] for i in top_idx]
         section_results.append((section["id"], float(scores.max()), top_tokens))
 
     all_scores = np.array([s for _, s, _ in section_results])
