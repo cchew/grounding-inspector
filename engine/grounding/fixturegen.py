@@ -2,7 +2,8 @@ from grounding.metrics import groundedness
 from grounding.schema import validate_fixture
 
 def build_fixture(fixture_id: str, source: dict, ai_output: str,
-                  claims: list[dict], scorecard: dict) -> dict:
+                  claims: list[dict], scorecard: dict,
+                  omissions: list[dict] | None = None) -> dict:
     fixture = {
         "fixture_id": fixture_id,
         "source": source,
@@ -10,6 +11,7 @@ def build_fixture(fixture_id: str, source: dict, ai_output: str,
         "claims": claims,
         "groundedness": groundedness([c["label"] for c in claims]),
         "scorecard": scorecard,
+        "omissions": omissions if omissions is not None else [],
     }
     validate_fixture(fixture)  # fail loudly before write (spec error-handling)
     return fixture

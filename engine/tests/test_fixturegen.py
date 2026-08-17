@@ -19,3 +19,20 @@ def test_build_fixture_is_schema_valid():
     fx = build_fixture("travel-pds-02", SOURCE, "ai text", CLAIMS, SCORECARD)
     validate_fixture(fx)
     assert fx["groundedness"] == {"score": 50, "n_grounded": 1, "n_partial": 0, "n_unsupported": 1}
+
+
+def test_build_fixture_defaults_omissions_to_empty_list():
+    fx = build_fixture("travel-pds-02", SOURCE, "ai text", CLAIMS, SCORECARD)
+    assert fx["omissions"] == []
+    validate_fixture(fx)
+
+
+def test_build_fixture_passes_through_omissions():
+    omissions = [{
+        "method": "embedkde", "global_score": 0.2, "flagged_sections": [],
+        "hyperparameters": {"pca_components": 16, "kde_bandwidth": 1.0, "threshold_std": 1.5},
+        "validated": False, "caveat": "unvalidated",
+    }]
+    fx = build_fixture("travel-pds-02", SOURCE, "ai text", CLAIMS, SCORECARD, omissions=omissions)
+    assert fx["omissions"] == omissions
+    validate_fixture(fx)
