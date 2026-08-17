@@ -59,3 +59,55 @@ def test_pca_components_capped_to_available_dimensions():
     source_emb = np.array([[5.0, 5.0]])
     scores = compute_om_scores(source_emb, output_emb, pca_components=16, kde_bandwidth=1.0)
     assert scores.shape == (1,)
+
+
+from grounding.omission import check_omissions_embedkde
+
+
+def test_flags_section_semantically_absent_from_output():
+    # Mirrors the EmbedKDECheck paper's own worked example (hepatectomy /
+    # infection vs. surgery): s1 restates what the output already says,
+    # s2 introduces content the output never mentions.
+    embedder = FakeEmbedder({
+        "patient": np.array([0.1, 0.1]),
+        "underwent": np.array([-0.1, 0.1]),
+        "surgery": np.array([0.0, 0.0]),
+        "showed": np.array([0.1, -0.1]),
+        "hepatectomy": np.array([10.0, 10.0]),
+        "postoperative": np.array([10.1, 10.1]),
+        "infection": np.array([10.0, 10.2]),
+    })
+    sections = [
+        {"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "patient underwent surgery"},
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 0, "text": "hepatectomy showed postoperative infection"},
+    ]
+    ai_output = "patient underwent surgery and showed no infection"
+
+    result = check_omissions_embedkde(
+        sections, ai_output, embedder, pca_components=2, kde_bandwidth=1.0, threshold_std=0.5,
+    )
+
+    assert result["method"] == "embedkde"
+    assert result["validated"] is False
+    assert "unvalidated" in result["caveat"].lower()
+    flagged_ids = [f["section_id"] for f in result["flagged_sections"]]
+    assert "s2" in flagged_ids
+    assert "s1" not in flagged_ids
+    s2 = next(f for f in result["flagged_sections"] if f["section_id"] == "s2")
+    assert set(s2["top_tokens"]) & {"hepatectomy", "postoperative", "infection"}
+
+
+def test_no_flags_when_all_scores_identical():
+    # Every token maps to the exact same vector, so every section's
+    # aggregated score comes out identical (std=0 across sections) --
+    # this exercises the `std > 0` guard, not just "nothing crosses the
+    # threshold" (a std>0-but-below-threshold case wouldn't prove the
+    # guard branch runs at all).
+    same_vec = np.array([0.0, 0.0])
+    embedder = FakeEmbedder({"cat": same_vec, "dog": same_vec, "bird": same_vec})
+    sections = [
+        {"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "cat"},
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 0, "text": "dog"},
+    ]
+    result = check_omissions_embedkde(sections, "bird", embedder, pca_components=1, kde_bandwidth=1.0)
+    assert result["flagged_sections"] == []

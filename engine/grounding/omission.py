@@ -64,3 +64,64 @@ def compute_om_scores(
     source_density = np.clip(source_density, a_min=1e-300, a_max=None)  # avoid div-by-zero
 
     return min_output_density / source_density
+
+
+_CAVEAT = (
+    "Omission signals are unvalidated: no ground-truth omission labels exist for "
+    "these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, "
+    "per-document threshold) are unadjusted defaults, not calibrated against labeled "
+    "data. Treat a flagged span as a prompt to review the source directly, not a finding."
+)
+
+
+def check_omissions_embedkde(
+    source_sections: list[dict], ai_output: str, embedder: Embedder,
+    pca_components: int = 16, kde_bandwidth: float = 1.0, threshold_std: float = 1.5,
+) -> dict:
+    """Tokenizes+embeds the ai_output once, then each source section
+    separately, computing per-token OM scores via compute_om_scores() and
+    aggregating to section-level (max token score per section -- same
+    aggregation the paper uses for its single whole-document global score,
+    applied per-section here). Flags sections scoring more than
+    threshold_std standard deviations above this document's own mean
+    section score -- a self-relative threshold, not an absolute magnitude,
+    because OM_score has no calibrated absolute scale without labeled data
+    (the paper's own absolute threshold came from random search against
+    ground truth GI doesn't have).
+    """
+    output_tokens = tokenize(ai_output)
+    output_emb = embed_tokens(output_tokens, embedder)
+
+    section_results: list[tuple[str, float, list[str]]] = []
+    for section in source_sections:
+        tokens = tokenize(section["text"])
+        source_emb = embed_tokens(tokens, embedder)
+        if source_emb.shape[0] == 0 or output_emb.shape[0] == 0:
+            section_results.append((section["id"], 0.0, []))
+            continue
+        scores = compute_om_scores(source_emb, output_emb, pca_components, kde_bandwidth)
+        top_idx = np.argsort(scores)[::-1][:3]
+        top_tokens = [tokens[i] for i in top_idx]
+        section_results.append((section["id"], float(scores.max()), top_tokens))
+
+    all_scores = np.array([s for _, s, _ in section_results])
+    mean, std = float(all_scores.mean()), float(all_scores.std())
+    flagged = [
+        {"section_id": sid, "score": score, "top_tokens": tokens}
+        for sid, score, tokens in section_results
+        if std > 0 and score > mean + threshold_std * std
+    ]
+    global_score = float(all_scores.max()) if len(all_scores) else 0.0
+
+    return {
+        "method": "embedkde",
+        "global_score": global_score,
+        "flagged_sections": flagged,
+        "hyperparameters": {
+            "pca_components": pca_components,
+            "kde_bandwidth": kde_bandwidth,
+            "threshold_std": threshold_std,
+        },
+        "validated": False,
+        "caveat": _CAVEAT,
+    }
