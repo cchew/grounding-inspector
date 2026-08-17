@@ -16,6 +16,17 @@ export interface Scorecard {
   balanced_accuracy: number | null;
   validated_on: string; domain_note: string;
 }
+export interface FlaggedSection {
+  section_id: string; score: number; top_tokens: string[];
+}
+export interface OmissionEntry {
+  method: "embedkde";
+  global_score: number;
+  flagged_sections: FlaggedSection[];
+  hyperparameters: Record<string, number>;
+  validated: boolean;
+  caveat: string;
+}
 export interface Fixture {
   fixture_id: string;
   source: { title: string; sections: Section[] };
@@ -23,4 +34,5 @@ export interface Fixture {
   claims: Claim[];
   groundedness: Groundedness;
   scorecard: Scorecard;
+  omissions?: OmissionEntry[];
 }

@@ -40,3 +40,38 @@ describe("Inspector", () => {
     expect(w.get('[data-testid="output-panel"]').text()).toContain("OUTPUT");
   });
 });
+
+// Fixture is already imported at the top of this file — reuse it directly.
+const fixtureWithOmissions: Fixture = {
+  ...fixture,
+  omissions: [{
+    method: "embedkde",
+    global_score: 0.8,
+    flagged_sections: [
+      { section_id: "s4_2", score: 0.8, top_tokens: ["hepatectomy", "infection"] },
+    ],
+    hyperparameters: { pca_components: 16, kde_bandwidth: 1.0, threshold_std: 1.5 },
+    validated: false,
+    caveat: "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures.",
+  }],
+};
+
+describe("OmissionPanel via Inspector", () => {
+  it("does not render an omission panel when the fixture has no omissions field", () => {
+    const w = mount(Inspector, { props: { fixture } });
+    expect(w.find('[data-testid="omission-panel"]').exists()).toBe(false);
+  });
+
+  it("renders flagged sections and the caveat when omissions data is present", () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithOmissions } });
+    expect(w.find('[data-testid="omission-panel"]').exists()).toBe(true);
+    expect(w.get('[data-omission="s4_2"]').text()).toContain("hepatectomy");
+    expect(w.get('[data-testid="omission-caveat"]').text()).toContain("unvalidated");
+  });
+
+  it("clicking a flagged section highlights it in the source doc, independent of claim selection", async () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithOmissions } });
+    await w.get('[data-omission="s4_2"]').trigger("click");
+    expect(w.get('[data-span="s4_2"]').classes()).toContain("span-active-omission");
+  });
+});

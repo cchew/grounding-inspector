@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import type { Fixture, Claim } from "../types";
+import type { Fixture, Claim, FlaggedSection } from "../types";
 import ClaimList from "./ClaimList.vue";
 import SourceDoc from "./SourceDoc.vue";
+import OmissionPanel from "./OmissionPanel.vue";
 import { track } from "../analytics";
 
 const props = defineProps<{ fixture: Fixture }>();
@@ -13,10 +14,17 @@ const activeLabel = computed(() => active.value?.label ?? null);
 const activeRationale = computed(() => active.value?.rationale ?? "");
 const g = computed(() => props.fixture.groundedness);
 const claimCount = computed(() => props.fixture.claims.length);
+const activeOmission = ref<FlaggedSection | null>(null);
+const activeOmissionSectionId = computed(() => activeOmission.value?.section_id ?? null);
 
 function onSelectClaim(claim: Claim) {
   active.value = claim;
   track("claim_clicked", { label: claim.label, hasEvidence: claim.evidence_span_ids.length > 0 });
+}
+
+function onSelectOmission(section: FlaggedSection) {
+  activeOmission.value = section;
+  track("omission_clicked", { sectionId: section.section_id, score: section.score });
 }
 </script>
 
@@ -54,6 +62,15 @@ function onSelectClaim(claim: Claim) {
           <span class="legend-chip unsupported">✗ unsupported</span>
         </div>
         <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="onSelectClaim" />
+        <template v-if="fixture.omissions && fixture.omissions.length > 0">
+          <h2 class="pane-heading omission-heading">Possible Omissions</h2>
+          <OmissionPanel
+            :flagged-sections="fixture.omissions[0].flagged_sections"
+            :caveat="fixture.omissions[0].caveat"
+            :active-section-id="activeOmissionSectionId"
+            @select="onSelectOmission"
+          />
+        </template>
       </section>
 
       <!-- Right: source document -->
@@ -66,6 +83,7 @@ function onSelectClaim(claim: Claim) {
           :no-span="noSpan"
           :active-label="activeLabel"
           :active-rationale="activeRationale"
+          :active-omission-section-id="activeOmissionSectionId"
         />
       </section>
 

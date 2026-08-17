@@ -32,6 +32,11 @@
   --chip-unsupported-text:   oklch(35% 0.14 25);
   --chip-unsupported-border: oklch(79% 0.08 25);
 
+  /* Omission signal — distinct from grounded/partial/unsupported verdict chips */
+  --chip-omission-bg:     oklch(93% 0.05 300);
+  --chip-omission-text:   oklch(38% 0.11 300);
+  --chip-omission-border: oklch(76% 0.09 300);
+
   /* Typography */
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;

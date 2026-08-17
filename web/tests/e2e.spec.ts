@@ -391,3 +391,18 @@ test.describe("State reset on fixture switch", () => {
     await expect(page.getByRole("button", { name: "Synthetic 01" })).not.toHaveClass(/active/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Omission panel — pre-regeneration: none of the 5 committed fixtures carry
+// omissions data yet (Task 8 hasn't run), so no panel should render.
+// ---------------------------------------------------------------------------
+test.describe("Omission panel (pre-regeneration)", () => {
+  for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
+    test(`${id}: no omission panel without omissions data`, async ({ page }) => {
+      await page.goto("/");
+      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await navigateTo(page, id);
+      await expect(page.locator('[data-testid="omission-panel"]')).toHaveCount(0);
+    });
+  }
+});

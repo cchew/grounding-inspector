@@ -7,11 +7,17 @@ const props = defineProps<{
   noSpan: boolean;
   activeLabel: Label | null;
   activeRationale: string;
+  activeOmissionSectionId: string | null;
 }>();
 const root = ref<HTMLElement | null>(null);
 watch(() => props.activeSpanIds, (ids) => {
   if (!ids.length || !root.value) return;
   const el = root.value.querySelector(`[data-span="${ids[0]}"]`);
+  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+}, { flush: "post" });
+watch(() => props.activeOmissionSectionId, (id) => {
+  if (!id || !root.value) return;
+  const el = root.value.querySelector(`[data-span="${id}"]`);
   el?.scrollIntoView({ behavior: "smooth", block: "center" });
 }, { flush: "post" });
 </script>
@@ -29,6 +35,7 @@ watch(() => props.activeSpanIds, (ids) => {
          'span-active': activeSpanIds.includes(s.id),
          'span-active-grounded': activeSpanIds.includes(s.id) && activeLabel === 'grounded',
          'span-active-partial': activeSpanIds.includes(s.id) && activeLabel === 'partial',
+         'span-active-omission': s.id === activeOmissionSectionId,
        }]">
       <span class="page mono">p.{{ s.page }}</span>
       <span class="section-text">{{ s.text }}</span>
@@ -80,6 +87,11 @@ watch(() => props.activeSpanIds, (ids) => {
 .section.span-active-partial {
   background: var(--chip-partial-bg);
   border-left-color: var(--chip-partial-border);
+}
+
+.section.span-active-omission {
+  background: var(--chip-omission-bg);
+  border-left-color: var(--chip-omission-border);
 }
 
 .page {
