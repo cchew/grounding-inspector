@@ -39,5 +39,5 @@ def test_omissions_rejects_unknown_method():
 
 def test_fixture_without_omissions_field_still_valid():
     fx = json.loads((ROOT / "fixtures" / "travel-pds-01.json").read_text())
-    assert "omissions" not in fx
+    fx.pop("omissions", None)
     validate_fixture(fx)  # must not raise -- omissions is optional, not required

@@ -116,5 +116,19 @@
     "pipeline_commit": "1814f83",
     "verifier_model": "flan-t5-large",
     "source_sha256": "258ecd8a8dad3fc089ad81d08beae589f0e906c004a476c6e49c456b77969b82"
-  }
+  },
+  "omissions": [
+    {
+      "method": "embedkde",
+      "global_score": 0.24205050177127402,
+      "flagged_sections": [],
+      "hyperparameters": {
+        "pca_components": 16,
+        "kde_bandwidth": 1.0,
+        "threshold_std": 1.5
+      },
+      "validated": false,
+      "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    }
+  ]
 }
