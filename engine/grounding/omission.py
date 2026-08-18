@@ -13,9 +13,19 @@ _STOPWORDS = frozenset({
 
 
 def tokenize(text: str) -> list[str]:
-    """Lowercase word tokens, punctuation stripped, stopwords removed."""
+    """Lowercase word tokens, punctuation stripped, stopwords and bare
+    numbers removed.
+
+    Pure-digit tokens are dropped: the regex splits a formatted figure like
+    "$1,000" into "1" and "000", and those fragments sit far from every
+    content word in FastText space, so they dominate the OM score as
+    meaningless outliers. Numeric claims are already checked deterministically
+    by grounding.numeric_check, which is the right tool for that job.
+    Mixed alphanumerics ("10am", "item10") are kept -- they carry lexical
+    meaning a pure digit run does not.
+    """
     words = re.findall(r"[a-z0-9]+", text.lower())
-    return [w for w in words if w not in _STOPWORDS]
+    return [w for w in words if w not in _STOPWORDS and not w.isdigit()]
 
 
 def embed_tokens(tokens: list[str], embedder: Embedder) -> np.ndarray:
@@ -104,26 +114,34 @@ def check_omissions_embedkde(
     output_tokens = tokenize(ai_output)
     output_emb = embed_tokens(output_tokens, embedder)
 
-    section_results: list[tuple[str, float, list[str]]] = []
+    # (section_id, score, top_tokens, scored) -- `scored` is False for
+    # "no data" sentinels (section or output had no in-vocabulary tokens).
+    # A sentinel's 0.0 is a placeholder, not a measurement of "perfectly
+    # represented", so it must never enter the distribution the threshold
+    # is derived from, and it can never itself be flagged.
+    section_results: list[tuple[str, float, list[str], bool]] = []
     for section in source_sections:
         tokens = tokenize(section["text"])
         surviving_tokens, source_emb = _embed_with_survivors(tokens, embedder)
         if source_emb.shape[0] == 0 or output_emb.shape[0] == 0:
-            section_results.append((section["id"], 0.0, []))
+            section_results.append((section["id"], 0.0, [], False))
             continue
         scores = compute_om_scores(source_emb, output_emb, pca_components, kde_bandwidth)
         top_idx = np.argsort(scores)[::-1][:3]
         top_tokens = [surviving_tokens[i] for i in top_idx]
-        section_results.append((section["id"], float(scores.max()), top_tokens))
+        section_results.append((section["id"], float(scores.max()), top_tokens, True))
 
-    all_scores = np.array([s for _, s, _ in section_results])
-    mean, std = float(all_scores.mean()), float(all_scores.std())
+    real_scores = np.array([s for _, s, _, scored in section_results if scored])
+    if real_scores.size:
+        mean, std = float(real_scores.mean()), float(real_scores.std())
+        global_score = float(real_scores.max())
+    else:
+        mean = std = global_score = 0.0
     flagged = [
         {"section_id": sid, "score": score, "top_tokens": tokens}
-        for sid, score, tokens in section_results
-        if std > 0 and score > mean + threshold_std * std
+        for sid, score, tokens, scored in section_results
+        if scored and std > 0 and score > mean + threshold_std * std
     ]
-    global_score = float(all_scores.max()) if len(all_scores) else 0.0
 
     return {
         "method": "embedkde",

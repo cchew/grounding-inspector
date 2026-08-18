@@ -23,6 +23,19 @@ def test_tokenize_lowercases_strips_punctuation_and_drops_stopwords():
     assert "covered" in tokens
 
 
+def test_tokenize_drops_pure_digit_tokens_but_keeps_mixed_alphanumerics():
+    # "$10,000,000" splits into the bare fragments "10"/"000"/"000", which sit
+    # far from any content word in embedding space and would otherwise dominate
+    # the OM score. Numeric claims are grounding.numeric_check's job.
+    tokens = tokenize("covered up to $10,000,000 for item10 from 10am")
+    assert "10" not in tokens
+    assert "000" not in tokens
+    assert not any(t.isdigit() for t in tokens)
+    assert "item10" in tokens      # mixed alnum survives
+    assert "10am" in tokens        # mixed alnum survives
+    assert "covered" in tokens
+
+
 def test_embed_tokens_drops_oov_silently():
     embedder = FakeEmbedder({"insurance": np.array([1.0, 0.0])})
     result = embed_tokens(["insurance", "zzznotaword"], embedder)
@@ -95,6 +108,67 @@ def test_flags_section_semantically_absent_from_output():
     assert "s1" not in flagged_ids
     s2 = next(f for f in result["flagged_sections"] if f["section_id"] == "s2")
     assert set(s2["top_tokens"]) & {"hepatectomy", "postoperative", "infection"}
+
+
+def _sentinel_pollution_fixture():
+    """Three real sections at increasing distance from the output cluster,
+    plus one all-OOV ("no data") section. Vectors are chosen so that the
+    sentinel's 0.0 placeholder, if it were allowed into the mean/std, would
+    drag the threshold down far enough to flag s2 as well as s3."""
+    embedder = FakeEmbedder({
+        # output cluster, tight around the origin
+        "alpha": np.array([0.0, 0.0]),
+        "bravo": np.array([0.1, 0.1]),
+        "charlie": np.array([-0.1, 0.1]),
+        "delta": np.array([0.1, -0.1]),
+        "echo": np.array([-0.1, -0.1]),
+        # source tokens at increasing distance from that cluster
+        "near": np.array([0.0, 0.0]),
+        "mid": np.array([0.2, 0.2]),
+        "far": np.array([0.4, 0.4]),
+    })
+    real_sections = [
+        {"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "near"},
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 0, "text": "mid"},
+        {"id": "s3", "page": 1, "char_start": 0, "char_end": 0, "text": "far"},
+    ]
+    sentinel = {"id": "s_nodata", "page": 1, "char_start": 0, "char_end": 0,
+                "text": "zzznotaword qqqnotaword"}  # every token OOV -> no data
+    ai_output = "alpha bravo charlie delta echo"
+    return embedder, real_sections, sentinel, ai_output
+
+
+def test_sentinel_section_does_not_change_which_real_sections_flag():
+    embedder, real_sections, sentinel, ai_output = _sentinel_pollution_fixture()
+    kwargs = dict(pca_components=2, kde_bandwidth=1.0, threshold_std=0.5)
+
+    without = check_omissions_embedkde(real_sections, ai_output, embedder, **kwargs)
+    with_sentinel = check_omissions_embedkde(
+        real_sections + [sentinel], ai_output, embedder, **kwargs,
+    )
+
+    flagged_without = [f["section_id"] for f in without["flagged_sections"]]
+    flagged_with = [f["section_id"] for f in with_sentinel["flagged_sections"]]
+
+    assert flagged_without == ["s3"]          # guards the fixture itself
+    assert flagged_with == flagged_without    # sentinel must not pollute the threshold
+    assert "s_nodata" not in flagged_with     # a no-data section is never a finding
+    assert with_sentinel["global_score"] == without["global_score"]
+
+
+def test_all_sections_sentinel_returns_zero_score_and_no_flags():
+    # Empty real-score array: mean/std/global_score must default to 0.0
+    # rather than producing nan from an empty-array .mean()/.std().
+    embedder = FakeEmbedder({"alpha": np.array([0.0, 0.0]), "bravo": np.array([0.1, 0.1])})
+    sections = [
+        {"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "zzznotaword"},
+        {"id": "s2", "page": 1, "char_start": 0, "char_end": 0, "text": "qqqnotaword"},
+    ]
+    result = check_omissions_embedkde(
+        sections, "alpha bravo", embedder, pca_components=2, kde_bandwidth=1.0,
+    )
+    assert result["flagged_sections"] == []
+    assert result["global_score"] == 0.0
 
 
 def test_no_flags_when_all_scores_identical():
