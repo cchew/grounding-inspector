@@ -7,8 +7,8 @@ from grounding.omission_embed import Embedder
 
 _STOPWORDS = frozenset({
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
-    "has", "he", "in", "is", "it", "its", "of", "on", "that", "the",
-    "to", "up", "was", "were", "will", "with",
+    "has", "he", "if", "in", "is", "it", "its", "of", "on", "that", "the",
+    "to", "up", "was", "we", "were", "will", "with",
 })
 
 
@@ -23,9 +23,15 @@ def tokenize(text: str) -> list[str]:
     by grounding.numeric_check, which is the right tool for that job.
     Mixed alphanumerics ("10am", "item10") are kept -- they carry lexical
     meaning a pure digit run does not.
+
+    Single-character tokens are dropped for the same reason: the regex
+    splits an apostrophe contraction like "agent's" into "agent" and "s",
+    and that bare "s" fragment carries no lexical meaning of its own -- it's
+    the same class of meaningless-outlier problem as the digit fragments
+    above, just from punctuation splitting instead of number formatting.
     """
     words = re.findall(r"[a-z0-9]+", text.lower())
-    return [w for w in words if w not in _STOPWORDS and not w.isdigit()]
+    return [w for w in words if w not in _STOPWORDS and not w.isdigit() and len(w) > 1]
 
 
 def embed_tokens(tokens: list[str], embedder: Embedder) -> np.ndarray:
