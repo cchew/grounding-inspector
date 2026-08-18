@@ -71,6 +71,20 @@ const FIXTURES = {
 type FixtureId = keyof typeof FIXTURES;
 
 // ---------------------------------------------------------------------------
+// Suppress the first-visit guided tour (driver.js, see src/tour.ts) for every
+// test in this file. Each Playwright test gets a fresh browser context, so
+// localStorage is empty and the tour would otherwise auto-fire on every
+// page.goto("/") and open a full-viewport overlay that intercepts pointer
+// events outside whatever element it's currently highlighting -- unrelated
+// to whatever the test is actually checking. Same workaround as
+// tests/App.test.ts's beforeEach, applied at the page level via
+// addInitScript since these tests drive a real browser, not a Vue mount.
+// ---------------------------------------------------------------------------
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("gi-tour-seen", "1"));
+});
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 async function navigateTo(page: import("@playwright/test").Page, id: FixtureId) {
@@ -393,16 +407,30 @@ test.describe("State reset on fixture switch", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Omission panel — pre-regeneration: none of the 5 committed fixtures carry
-// omissions data yet (Task 8 hasn't run), so no panel should render.
+// Omission panel — post-regeneration: all 5 fixtures now carry real
+// EmbedKDECheck omissions data (Task 8). Assertions are structural, not
+// value-exact -- which sections get flagged depends on the real pretrained
+// model, not something this test suite can pin down in advance.
 // ---------------------------------------------------------------------------
-test.describe("Omission panel (pre-regeneration)", () => {
+test.describe("Omission panel (post-regeneration)", () => {
   for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
-    test(`${id}: no omission panel without omissions data`, async ({ page }) => {
+    test(`${id}: omission caveat discloses unvalidated status`, async ({ page }) => {
       await page.goto("/");
       await page.waitForSelector(".fixture-btn", { timeout: 5000 });
       await navigateTo(page, id);
-      await expect(page.locator('[data-testid="omission-panel"]')).toHaveCount(0);
+      await expect(page.locator('[data-testid="omission-caveat"]')).toContainText("unvalidated");
+    });
+
+    test(`${id}: clicking a flagged section (if any) highlights it in the source doc`, async ({ page }) => {
+      await page.goto("/");
+      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await navigateTo(page, id);
+      const rows = page.locator("[data-omission]");
+      const count = await rows.count();
+      test.skip(count === 0, `${id}: no sections flagged for this fixture`);
+      const firstId = await rows.first().getAttribute("data-omission");
+      await rows.first().click();
+      await expect(page.locator(`[data-span="${firstId}"]`)).toHaveClass(/span-active-omission/);
     });
   }
 });
