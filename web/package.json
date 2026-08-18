@@ -10,7 +10,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/copy-fixtures.mjs && vite",
-    "serve": "tsx src/server.ts",
+    "serve": "npm run build && tsx src/server.ts",
     "build": "node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
     "test": "vitest run"
   },
