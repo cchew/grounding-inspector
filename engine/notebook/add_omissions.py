@@ -34,7 +34,13 @@ def run():
     for fid in FIXTURE_IDS:
         path = ROOT / "fixtures" / f"{fid}.json"
         fixture = json.loads(path.read_text())
-        before = json.dumps(fixture, sort_keys=True)
+        # Snapshot everything EXCEPT omissions, so the guard below compares
+        # like with like on a re-run (an earlier run leaves an omissions
+        # field behind; including it here would make the assert fire on any
+        # second invocation, regardless of whether anything else changed).
+        before_without_omissions = dict(fixture)
+        before_without_omissions.pop("omissions", None)
+        before = json.dumps(before_without_omissions, sort_keys=True)
 
         omission_result = check_omissions_embedkde(
             fixture["source"]["sections"], fixture["ai_output"], embedder,

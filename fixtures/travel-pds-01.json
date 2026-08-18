@@ -93,18 +93,8 @@
   "omissions": [
     {
       "method": "embedkde",
-      "global_score": 1.0000005882337486,
-      "flagged_sections": [
-        {
-          "section_id": "s7_1",
-          "score": 1.0000005882337486,
-          "top_tokens": [
-            "5",
-            "1",
-            "000"
-          ]
-        }
-      ],
+      "global_score": 0.8765827047580934,
+      "flagged_sections": [],
       "hyperparameters": {
         "pca_components": 16,
         "kde_bandwidth": 1.0,
