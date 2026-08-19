@@ -17,13 +17,15 @@ export interface Scorecard {
   validated_on: string; domain_note: string;
 }
 export interface FlaggedSection {
-  section_id: string; score: number; top_tokens: string[];
+  section_id: string; score: number;
+  top_tokens?: string[];
+  omitted_facts?: { fact: string; question: string; evidence: string | null }[];
 }
 export interface OmissionEntry {
-  method: "embedkde";
+  method: "embedkde" | "comprehensiveness_qa";
   global_score: number;
   flagged_sections: FlaggedSection[];
-  hyperparameters: Record<string, number>;
+  hyperparameters: Record<string, number | string>;
   validated: boolean;
   caveat: string;
 }
