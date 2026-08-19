@@ -102,6 +102,26 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 1.0,
+      "flagged_sections": [
+        {
+          "section_id": "s9",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "SYNTHETIC TEST DATA -- not from a real API call. See Task 9 of docs/superpowers/plans/2026-08-19-grounding-inspector-comprehensiveness-recall-qa.md.",
+              "question": "Does the output mention this fact?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": { "model": "claude-sonnet-4-5-20250929", "flag_threshold": 0.0 },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding."
     }
   ]
 }

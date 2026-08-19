@@ -418,7 +418,8 @@ test.describe("Omission panel (post-regeneration)", () => {
       await page.goto("/");
       await page.waitForSelector(".fixture-btn", { timeout: 5000 });
       await navigateTo(page, id);
-      await expect(page.locator('[data-testid="omission-caveat"]')).toContainText("unvalidated");
+      const caveats = page.locator('[data-testid^="omission-caveat-"]');
+      await expect(caveats.first()).toContainText("unvalidated");
     });
 
     test(`${id}: clicking a flagged section (if any) highlights it in the source doc`, async ({ page }) => {
@@ -433,4 +434,13 @@ test.describe("Omission panel (post-regeneration)", () => {
       await expect(page.locator(`[data-span="${firstId}"]`)).toHaveClass(/span-active-omission/);
     });
   }
+
+  test("travel-pds-01: renders both an embedkde and a comprehensiveness_qa panel", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await navigateTo(page, "travel-pds-01");
+    await expect(page.locator('[data-testid="omission-panel-embedkde"]')).toBeVisible();
+    await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toBeVisible();
+    await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toContainText("SYNTHETIC TEST DATA");
+  });
 });
