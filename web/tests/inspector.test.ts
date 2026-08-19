@@ -75,3 +75,44 @@ describe("OmissionPanel via Inspector", () => {
     expect(w.get('[data-span="s4_2"]').classes()).toContain("span-active-omission");
   });
 });
+
+const fixtureWithBothOmissionMethods: Fixture = {
+  ...fixture,
+  omissions: [
+    fixtureWithOmissions.omissions![0],
+    {
+      method: "comprehensiveness_qa",
+      global_score: 0.5,
+      flagged_sections: [
+        {
+          section_id: "s4_2", score: 0.5,
+          omitted_facts: [
+            { fact: "policy excludes pre-existing conditions", question: "Does it exclude pre-existing conditions?", evidence: null },
+          ],
+        },
+      ],
+      hyperparameters: { model: "claude-sonnet-4-5-20250929", flag_threshold: 0 },
+      validated: false,
+      caveat: "Comprehensiveness signals are unvalidated.",
+    },
+  ],
+};
+
+describe("OmissionPanel via Inspector — multi-method", () => {
+  it("renders one panel per omissions entry", () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithBothOmissionMethods } });
+    expect(w.find('[data-testid="omission-panel-embedkde"]').exists()).toBe(true);
+    expect(w.find('[data-testid="omission-panel-comprehensiveness_qa"]').exists()).toBe(true);
+  });
+
+  it("shows omitted facts (not tokens) in the comprehensiveness_qa panel", () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithBothOmissionMethods } });
+    const panel = w.get('[data-testid="omission-panel-comprehensiveness_qa"]');
+    expect(panel.text()).toContain("policy excludes pre-existing conditions");
+  });
+
+  it("a fixture with only one omissions entry still renders exactly one panel", () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithOmissions } });
+    expect(w.findAll('[data-testid^="omission-panel-"]').length).toBe(1);
+  });
+});

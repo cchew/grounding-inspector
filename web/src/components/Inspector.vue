@@ -62,12 +62,14 @@ function onSelectOmission(section: FlaggedSection) {
           <span class="legend-chip unsupported">✗ unsupported</span>
         </div>
         <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="onSelectClaim" />
-        <template v-if="fixture.omissions && fixture.omissions.length > 0">
-          <h2 class="pane-heading omission-heading">Possible Omissions</h2>
+        <template v-for="entry in fixture.omissions ?? []" :key="entry.method">
+          <h2 class="pane-heading omission-heading">
+            Possible Omissions ({{ entry.method === 'embedkde' ? 'EmbedKDECheck' : 'Comprehensiveness (QA)' }})
+          </h2>
           <OmissionPanel
-            :method="fixture.omissions[0].method"
-            :flagged-sections="fixture.omissions[0].flagged_sections"
-            :caveat="fixture.omissions[0].caveat"
+            :method="entry.method"
+            :flagged-sections="entry.flagged_sections"
+            :caveat="entry.caveat"
             :active-section-id="activeOmissionSectionId"
             @select="onSelectOmission"
           />
