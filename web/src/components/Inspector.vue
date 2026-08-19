@@ -65,6 +65,7 @@ function onSelectOmission(section: FlaggedSection) {
         <template v-if="fixture.omissions && fixture.omissions.length > 0">
           <h2 class="pane-heading omission-heading">Possible Omissions</h2>
           <OmissionPanel
+            :method="fixture.omissions[0].method"
             :flagged-sections="fixture.omissions[0].flagged_sections"
             :caveat="fixture.omissions[0].caveat"
             :active-section-id="activeOmissionSectionId"

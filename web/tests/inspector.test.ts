@@ -59,14 +59,14 @@ const fixtureWithOmissions: Fixture = {
 describe("OmissionPanel via Inspector", () => {
   it("does not render an omission panel when the fixture has no omissions field", () => {
     const w = mount(Inspector, { props: { fixture } });
-    expect(w.find('[data-testid="omission-panel"]').exists()).toBe(false);
+    expect(w.find('[data-testid^="omission-panel-"]').exists()).toBe(false);
   });
 
   it("renders flagged sections and the caveat when omissions data is present", () => {
     const w = mount(Inspector, { props: { fixture: fixtureWithOmissions } });
-    expect(w.find('[data-testid="omission-panel"]').exists()).toBe(true);
+    expect(w.find('[data-testid="omission-panel-embedkde"]').exists()).toBe(true);
     expect(w.get('[data-omission="s4_2"]').text()).toContain("hepatectomy");
-    expect(w.get('[data-testid="omission-caveat"]').text()).toContain("unvalidated");
+    expect(w.get('[data-testid="omission-caveat-embedkde"]').text()).toContain("unvalidated");
   });
 
   it("clicking a flagged section highlights it in the source doc, independent of claim selection", async () => {

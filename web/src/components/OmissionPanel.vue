@@ -1,21 +1,29 @@
 <script setup lang="ts">
 import type { FlaggedSection } from "../types";
-defineProps<{ flaggedSections: FlaggedSection[]; caveat: string; activeSectionId: string | null }>();
+defineProps<{
+  method: string;
+  flaggedSections: FlaggedSection[];
+  caveat: string;
+  activeSectionId: string | null;
+}>();
 defineEmits<{ select: [section: FlaggedSection] }>();
 </script>
 
 <template>
-  <div class="omission-panel" data-testid="omission-panel">
+  <div class="omission-panel" :data-testid="`omission-panel-${method}`">
     <ul class="omission-list" v-if="flaggedSections.length > 0">
       <li v-for="f in flaggedSections" :key="f.section_id" :data-omission="f.section_id"
           :class="['omission', { active: f.section_id === activeSectionId }]"
           @click="$emit('select', f)">
-        <span class="omission-tokens">{{ f.top_tokens.join(', ') }}</span>
+        <span class="omission-tokens" v-if="f.top_tokens">{{ f.top_tokens.join(', ') }}</span>
+        <span class="omission-facts" v-else-if="f.omitted_facts">
+          <span v-for="of in f.omitted_facts" :key="of.fact" class="omitted-fact">{{ of.fact }}</span>
+        </span>
         <span class="omission-score mono">{{ f.score.toFixed(2) }}</span>
       </li>
     </ul>
     <p v-else class="no-omissions">No sections flagged.</p>
-    <p data-testid="omission-caveat" class="omission-caveat">{{ caveat }}</p>
+    <p :data-testid="`omission-caveat-${method}`" class="omission-caveat">{{ caveat }}</p>
   </div>
 </template>
 
@@ -41,6 +49,8 @@ defineEmits<{ select: [section: FlaggedSection] }>();
 }
 
 .omission-tokens { font-size: 0.8125rem; color: var(--color-ink); flex: 1; }
+.omission-facts { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.omitted-fact { font-size: 0.8125rem; color: var(--color-ink); }
 .omission-score { font-size: 0.75rem; color: var(--chip-omission-text); flex-shrink: 0; }
 .omission + .omission { border-top: 1px solid var(--color-border-light); }
 
