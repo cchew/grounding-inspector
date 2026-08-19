@@ -1,5 +1,7 @@
+import copy
 import json
 import numpy as np
+import pytest
 from notebook.add_omissions import regenerate_fixture
 
 
@@ -76,7 +78,22 @@ def test_byte_for_byte_guard_holds_with_both_methods():
         json.dumps({"status": "COVERED", "evidence": "alpha"}),
     ]
     client = FakeClaudeClient(responses)
-    original = dict(FIXTURE)
+    original = copy.deepcopy(FIXTURE)
     updated = regenerate_fixture(dict(FIXTURE), ("embedkde", "comprehensiveness_qa"), embedder=embedder, client=client)
     for key in ("fixture_id", "source", "ai_output", "claims", "groundedness", "scorecard"):
         assert updated[key] == original[key]
+
+
+def test_regenerate_fixture_raises_on_unknown_method():
+    with pytest.raises(ValueError, match="unknown"):
+        regenerate_fixture(dict(FIXTURE), ("comprehensivenes_qa",), embedder=None, client=None)
+
+
+def test_regenerate_fixture_raises_on_embedkde_without_embedder():
+    with pytest.raises(ValueError, match="embedder"):
+        regenerate_fixture(dict(FIXTURE), ("embedkde",), embedder=None, client=None)
+
+
+def test_regenerate_fixture_raises_on_comprehensiveness_qa_without_client():
+    with pytest.raises(ValueError, match="client"):
+        regenerate_fixture(dict(FIXTURE), ("comprehensiveness_qa",), embedder=None, client=None)

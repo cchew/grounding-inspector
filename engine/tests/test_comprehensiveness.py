@@ -81,6 +81,18 @@ def test_judge_coverage_raises_on_unexpected_status():
         judge_coverage("q", "fact", "output", client, model="m")
 
 
+def test_judge_coverage_raises_on_non_string_evidence():
+    client = FakeClaudeClient([json.dumps({"status": "OMITTED", "evidence": ["not", "a", "string"]})])
+    with pytest.raises(ValueError, match="evidence must be a string or null"):
+        judge_coverage("q", "fact", "output", client, model="m")
+
+
+def test_judge_coverage_raises_on_numeric_evidence():
+    client = FakeClaudeClient([json.dumps({"status": "COVERED", "evidence": 42})])
+    with pytest.raises(ValueError, match="evidence must be a string or null"):
+        judge_coverage("q", "fact", "output", client, model="m")
+
+
 def test_decompose_source_section_delegates_to_decompose_output_claude():
     payload = json.dumps([{"claim": "policy covers X", "subclaims": ["covers X"]}])
     client = FakeClaudeClient([payload])

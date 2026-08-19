@@ -34,12 +34,22 @@ FIXTURE_IDS = [
     "covermore-pds-01", "budgetdirect-pds-01",
 ]
 
+_KNOWN_METHODS = {"embedkde", "comprehensiveness_qa"}
+
 
 def regenerate_fixture(fixture: dict, methods: tuple[str, ...], embedder=None, client=None) -> dict:
     """Pure: takes a fixture dict, returns a new dict with `omissions`
     populated for the requested methods. Raises AssertionError if the
     non-omissions fields would change (byte-for-byte guard) -- caller
     decides what to do with that; this function never touches disk."""
+    unknown = set(methods) - _KNOWN_METHODS
+    if unknown:
+        raise ValueError(f"regenerate_fixture: unknown method(s) {sorted(unknown)!r} -- known methods are {sorted(_KNOWN_METHODS)!r}")
+    if "embedkde" in methods and embedder is None:
+        raise ValueError("regenerate_fixture: 'embedkde' requested but no embedder was provided")
+    if "comprehensiveness_qa" in methods and client is None:
+        raise ValueError("regenerate_fixture: 'comprehensiveness_qa' requested but no client was provided")
+
     before_without_omissions = dict(fixture)
     before_without_omissions.pop("omissions", None)
     before = json.dumps(before_without_omissions, sort_keys=True)

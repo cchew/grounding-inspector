@@ -107,7 +107,7 @@
                     "type": "array",
                     "items": {
                       "type": "object",
-                      "required": ["fact", "question"],
+                      "required": ["fact", "question", "evidence"],
                       "properties": {
                         "fact": { "type": "string" },
                         "question": { "type": "string" },

@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "fs/promises";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Fixture data mirrored here so tests are self-documenting and assertions are
@@ -435,7 +440,47 @@ test.describe("Omission panel (post-regeneration)", () => {
     });
   }
 
+  // -------------------------------------------------------------------------
+  // travel-pds-01's committed fixture only carries a real embedkde omissions
+  // entry (comprehensiveness_qa requires live API spend, so it isn't
+  // regenerated for every fixture and must never be hand-faked into the
+  // committed file -- see docs/superpowers/plans/
+  // 2026-08-19-grounding-inspector-comprehensiveness-recall-qa.md). This test
+  // intercepts the fixture request and splices a synthetic
+  // comprehensiveness_qa entry into the response in memory, so the on-disk
+  // fixture stays real and this test survives a future real regeneration.
+  // -------------------------------------------------------------------------
   test("travel-pds-01: renders both an embedkde and a comprehensiveness_qa panel", async ({ page }) => {
+    const fixturePath = join(here, "..", "..", "fixtures", "travel-pds-01.json");
+    const fixture = JSON.parse(await readFile(fixturePath, "utf-8"));
+    fixture.omissions = [
+      ...fixture.omissions,
+      {
+        method: "comprehensiveness_qa",
+        global_score: 1.0,
+        flagged_sections: [
+          {
+            section_id: "s9",
+            score: 1.0,
+            omitted_facts: [
+              {
+                fact: "SYNTHETIC TEST DATA -- injected at test time via page.route(), not from a real API call or the committed fixture.",
+                question: "Does the output mention this fact?",
+                evidence: null,
+              },
+            ],
+          },
+        ],
+        hyperparameters: { model: "claude-sonnet-4-5-20250929", flag_threshold: 0.0 },
+        validated: false,
+        caveat: "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding.",
+      },
+    ];
+
+    await page.route("**/fixtures/travel-pds-01.json", async (route) => {
+      await route.fulfill({ json: fixture });
+    });
+
     await page.goto("/");
     await page.waitForSelector(".fixture-btn", { timeout: 5000 });
     await navigateTo(page, "travel-pds-01");
