@@ -55,3 +55,82 @@ def judge_coverage(question: str, source_fact: str, ai_output: str, client, mode
         return {"status": status, "evidence": data.get("evidence")}
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
         raise ValueError(f"judge_coverage: could not parse response: {exc}") from exc
+
+
+def decompose_source_section(text: str, client, model: str) -> list[dict]:
+    """Thin wrapper over the existing decompose_output_claude() -- the
+    decomposer is already generic over input text, not output-specific, so
+    no new prompt is needed for this step. Returns the same
+    [{"text": claim, "subclaims": [...]}] shape build 1's pipeline already
+    produces for the output side."""
+    return decompose_output_claude(text, client, model)
+
+
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+
+_CAVEAT = (
+    "Comprehensiveness signals are unvalidated: no ground-truth omission labels "
+    "exist for these fixtures, and flag_threshold (any single OMITTED fact flags "
+    "its section) is an unadjusted default -- a single LLM misjudgment among many "
+    "subclaims can flag a section. Treat a flagged span as a prompt to review the "
+    "source directly, not a finding."
+)
+
+
+def check_omissions_comprehensiveness_qa(
+    source_sections: list[dict], ai_output: str, client, *,
+    allow_llm_calls: bool = False,
+    model: str = DEFAULT_MODEL,
+    flag_threshold: float = 0.0,
+) -> dict:
+    """For each section: decompose_source_section() -> for each subclaim,
+    generate_question() then judge_coverage(). Section score = fraction of
+    subclaims judged OMITTED. A section with zero subclaims after
+    decomposition contributes nothing and is never flagged (scored=False,
+    excluded from any aggregate). Flags any section scoring > flag_threshold.
+
+    allow_llm_calls must be explicitly True -- structural guard so a caller
+    that imports and calls this function directly cannot incur LLM spend
+    by accident, independent of add_omissions.py's methods-level opt-in.
+    """
+    if not allow_llm_calls:
+        raise ValueError(
+            "check_omissions_comprehensiveness_qa: allow_llm_calls=True required -- "
+            "this function makes real LLM calls and must be opted into explicitly"
+        )
+
+    section_results: list[tuple[str, float, list[dict], bool]] = []
+    for section in source_sections:
+        decomposed = decompose_source_section(section["text"], client, model)
+        subclaims = [sc for d in decomposed for sc in d["subclaims"]]
+        if not subclaims:
+            section_results.append((section["id"], 0.0, [], False))
+            continue
+        omitted_facts = []
+        n_omitted = 0
+        for fact in subclaims:
+            question = generate_question(fact, client, model)
+            judged = judge_coverage(question, fact, ai_output, client, model)
+            if judged["status"] == "OMITTED":
+                n_omitted += 1
+                omitted_facts.append({"fact": fact, "question": question, "evidence": judged["evidence"]})
+        score = n_omitted / len(subclaims)
+        section_results.append((section["id"], score, omitted_facts, True))
+
+    real_scores = [s for _, s, _, scored in section_results if scored]
+    global_score = max(real_scores) if real_scores else 0.0
+
+    flagged = [
+        {"section_id": sid, "score": score, "omitted_facts": facts}
+        for sid, score, facts, scored in section_results
+        if scored and score > flag_threshold
+    ]
+
+    return {
+        "method": "comprehensiveness_qa",
+        "global_score": global_score,
+        "flagged_sections": flagged,
+        "hyperparameters": {"model": model, "flag_threshold": flag_threshold},
+        "validated": False,
+        "caveat": _CAVEAT,
+    }

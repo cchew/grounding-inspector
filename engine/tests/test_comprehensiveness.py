@@ -1,7 +1,12 @@
 import json
 import pytest
 
-from grounding.comprehensiveness import generate_question, judge_coverage
+from grounding.comprehensiveness import (
+    generate_question,
+    judge_coverage,
+    decompose_source_section,
+    check_omissions_comprehensiveness_qa,
+)
 
 
 class FakeMessage:
@@ -74,3 +79,77 @@ def test_judge_coverage_raises_on_unexpected_status():
     client = FakeClaudeClient([json.dumps({"status": "MAYBE", "evidence": None})])
     with pytest.raises(ValueError, match="unexpected status"):
         judge_coverage("q", "fact", "output", client, model="m")
+
+
+def test_decompose_source_section_delegates_to_decompose_output_claude():
+    payload = json.dumps([{"claim": "policy covers X", "subclaims": ["covers X"]}])
+    client = FakeClaudeClient([payload])
+    result = decompose_source_section("policy covers X", client, model="m")
+    assert result == [{"text": "policy covers X", "subclaims": ["covers X"]}]
+
+
+def test_check_omissions_raises_without_allow_llm_calls():
+    client = FakeClaudeClient([])
+    with pytest.raises(ValueError, match="allow_llm_calls"):
+        check_omissions_comprehensiveness_qa([], "output", client)
+    assert client.messages.responses == []  # never touched -- structural guard, not just a default
+
+
+def test_check_omissions_flags_section_with_omitted_fact():
+    sections = [{"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "policy excludes pre-existing conditions"}]
+    responses = [
+        json.dumps([{"claim": "policy excludes pre-existing conditions", "subclaims": ["excludes pre-existing conditions"]}]),
+        "Does the output mention pre-existing conditions?",
+        json.dumps({"status": "OMITTED", "evidence": None}),
+    ]
+    client = FakeClaudeClient(responses)
+    result = check_omissions_comprehensiveness_qa(sections, "irrelevant output", client, allow_llm_calls=True)
+    assert result["method"] == "comprehensiveness_qa"
+    assert result["validated"] is False
+    flagged_ids = [f["section_id"] for f in result["flagged_sections"]]
+    assert "s1" in flagged_ids
+    s1 = next(f for f in result["flagged_sections"] if f["section_id"] == "s1")
+    assert s1["omitted_facts"][0]["fact"] == "excludes pre-existing conditions"
+    assert s1["omitted_facts"][0]["question"] == "Does the output mention pre-existing conditions?"
+
+
+def test_check_omissions_does_not_flag_fully_covered_section():
+    sections = [{"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "policy covers medical"}]
+    responses = [
+        json.dumps([{"claim": "policy covers medical", "subclaims": ["covers medical"]}]),
+        "Does the output mention medical cover?",
+        json.dumps({"status": "COVERED", "evidence": "medical is covered"}),
+    ]
+    client = FakeClaudeClient(responses)
+    result = check_omissions_comprehensiveness_qa(sections, "medical is covered", client, allow_llm_calls=True)
+    assert result["flagged_sections"] == []
+    assert result["global_score"] == 0.0
+
+
+def test_check_omissions_section_with_no_subclaims_is_never_flagged():
+    sections = [{"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": ""}]
+    responses = [json.dumps([])]  # decompose returns zero claims
+    client = FakeClaudeClient(responses)
+    result = check_omissions_comprehensiveness_qa(sections, "output", client, allow_llm_calls=True)
+    assert result["flagged_sections"] == []
+    assert result["global_score"] == 0.0
+
+
+def test_check_omissions_multi_subclaim_partial_omission_score():
+    sections = [{"id": "s1", "page": 1, "char_start": 0, "char_end": 0, "text": "two facts here"}]
+    responses = [
+        json.dumps([{"claim": "two facts here", "subclaims": ["fact A", "fact B"]}]),
+        "Q about A?", json.dumps({"status": "COVERED", "evidence": "A is here"}),
+        "Q about B?", json.dumps({"status": "OMITTED", "evidence": None}),
+    ]
+    client = FakeClaudeClient(responses)
+    result = check_omissions_comprehensiveness_qa(sections, "A is here", client, allow_llm_calls=True)
+    s1 = result["flagged_sections"][0]
+    assert s1["score"] == 0.5
+    assert len(s1["omitted_facts"]) == 1
+    assert s1["omitted_facts"][0]["fact"] == "fact B"
+
+
+def test_check_omissions_hyperparameters_record_single_model_key():
+    result = check_omissions_comprehensiveness_qa([], "output", FakeClaudeClient([]), allow_llm_calls=True, model="test-model")
+    assert result["hyperparameters"] == {"model": "test-model", "flag_threshold": 0.0}
