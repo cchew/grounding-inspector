@@ -1,6 +1,7 @@
+import json
 import pytest
 
-from grounding.comprehensiveness import generate_question
+from grounding.comprehensiveness import generate_question, judge_coverage
 
 
 class FakeMessage:
@@ -42,3 +43,34 @@ def test_generate_question_raises_on_empty_content():
 
     with pytest.raises(ValueError, match="empty content"):
         generate_question("fact", EmptyClient(), model="m")
+
+
+def test_judge_coverage_parses_covered_status():
+    client = FakeClaudeClient([json.dumps({"status": "COVERED", "evidence": "the policy covers X"})])
+    result = judge_coverage("does it cover X?", "policy covers X", "the policy covers X", client, model="m")
+    assert result == {"status": "COVERED", "evidence": "the policy covers X"}
+
+
+def test_judge_coverage_parses_omitted_status_with_null_evidence():
+    client = FakeClaudeClient([json.dumps({"status": "OMITTED", "evidence": None})])
+    result = judge_coverage("does it cover Y?", "policy covers Y", "unrelated output text", client, model="m")
+    assert result == {"status": "OMITTED", "evidence": None}
+
+
+def test_judge_coverage_strips_markdown_fence():
+    fenced = "```json\n" + json.dumps({"status": "COVERED", "evidence": "x"}) + "\n```"
+    client = FakeClaudeClient([fenced])
+    result = judge_coverage("q", "fact", "output", client, model="m")
+    assert result["status"] == "COVERED"
+
+
+def test_judge_coverage_raises_on_malformed_json():
+    client = FakeClaudeClient(["not json"])
+    with pytest.raises(ValueError, match="could not parse"):
+        judge_coverage("q", "fact", "output", client, model="m")
+
+
+def test_judge_coverage_raises_on_unexpected_status():
+    client = FakeClaudeClient([json.dumps({"status": "MAYBE", "evidence": None})])
+    with pytest.raises(ValueError, match="unexpected status"):
+        judge_coverage("q", "fact", "output", client, model="m")
