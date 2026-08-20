@@ -441,20 +441,20 @@ test.describe("Omission panel (post-regeneration)", () => {
   }
 
   // -------------------------------------------------------------------------
-  // travel-pds-01's committed fixture only carries a real embedkde omissions
-  // entry (comprehensiveness_qa requires live API spend, so it isn't
-  // regenerated for every fixture and must never be hand-faked into the
-  // committed file -- see docs/superpowers/plans/
-  // 2026-08-19-grounding-inspector-comprehensiveness-recall-qa.md). This test
-  // intercepts the fixture request and splices a synthetic
-  // comprehensiveness_qa entry into the response in memory, so the on-disk
-  // fixture stays real and this test survives a future real regeneration.
+  // travel-pds-01's committed fixture now carries real embedkde AND
+  // comprehensiveness_qa omissions data (real regeneration ran 2026-08-21,
+  // see docs/superpowers/plans/2026-08-19-grounding-inspector-comprehensiveness-
+  // recall-qa.md). This test still intercepts the fixture request and replaces
+  // the real comprehensiveness_qa entry with a synthetic one carrying a
+  // recognisable marker string, rather than asserting on real LLM output that
+  // could plausibly change on a future regeneration -- the on-disk fixture
+  // stays untouched either way.
   // -------------------------------------------------------------------------
   test("travel-pds-01: renders both an embedkde and a comprehensiveness_qa panel", async ({ page }) => {
     const fixturePath = join(here, "..", "..", "fixtures", "travel-pds-01.json");
     const fixture = JSON.parse(await readFile(fixturePath, "utf-8"));
     fixture.omissions = [
-      ...fixture.omissions,
+      ...fixture.omissions.filter((o: { method: string }) => o.method !== "comprehensiveness_qa"),
       {
         method: "comprehensiveness_qa",
         global_score: 1.0,
@@ -489,10 +489,10 @@ test.describe("Omission panel (post-regeneration)", () => {
     await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toContainText("SYNTHETIC TEST DATA");
   });
 
-  // Same synthetic-injection approach as above. No committed fixture currently
-  // flags any section under either method, so both entries are faked here --
-  // the isolation this asserts only manifests when two panels each render a row
-  // for the same section_id.
+  // Same synthetic-injection approach as above: both entries are replaced
+  // wholesale (not merged with the real ones) so this test controls exactly
+  // which section_id collides across panels, which real regenerated data
+  // can't guarantee run to run.
   test("travel-pds-01: an active row in one panel does not activate the same section in the other", async ({ page }) => {
     const fixturePath = join(here, "..", "..", "fixtures", "travel-pds-01.json");
     const fixture = JSON.parse(await readFile(fixturePath, "utf-8"));
