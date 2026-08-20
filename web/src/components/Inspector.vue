@@ -14,17 +14,22 @@ const activeLabel = computed(() => active.value?.label ?? null);
 const activeRationale = computed(() => active.value?.rationale ?? "");
 const g = computed(() => props.fixture.groundedness);
 const claimCount = computed(() => props.fixture.claims.length);
-const activeOmission = ref<FlaggedSection | null>(null);
-const activeOmissionSectionId = computed(() => activeOmission.value?.section_id ?? null);
+// Keyed by (method, section_id), not section_id alone: two panels can flag the
+// same source section, and a row highlighted in one panel must not imply the
+// other method flagged it too. The source-doc highlight stays shared -- both
+// methods point at the same span, and only one row is ever active.
+const activeOmission = ref<{ method: string; section: FlaggedSection } | null>(null);
+const activeOmissionSectionId = computed(() => activeOmission.value?.section.section_id ?? null);
+const activeOmissionMethod = computed(() => activeOmission.value?.method ?? null);
 
 function onSelectClaim(claim: Claim) {
   active.value = claim;
   track("claim_clicked", { label: claim.label, hasEvidence: claim.evidence_span_ids.length > 0 });
 }
 
-function onSelectOmission(section: FlaggedSection) {
-  activeOmission.value = section;
-  track("omission_clicked", { sectionId: section.section_id, score: section.score });
+function onSelectOmission(method: string, section: FlaggedSection) {
+  activeOmission.value = { method, section };
+  track("omission_clicked", { method, sectionId: section.section_id, score: section.score });
 }
 </script>
 
@@ -70,8 +75,8 @@ function onSelectOmission(section: FlaggedSection) {
             :method="entry.method"
             :flagged-sections="entry.flagged_sections"
             :caveat="entry.caveat"
-            :active-section-id="activeOmissionSectionId"
-            @select="onSelectOmission"
+            :active-section-id="entry.method === activeOmissionMethod ? activeOmissionSectionId : null"
+            @select="(section) => onSelectOmission(entry.method, section)"
           />
         </template>
       </section>

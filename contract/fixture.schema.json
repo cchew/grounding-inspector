@@ -82,6 +82,7 @@
     },
     "omissions": {
       "type": "array",
+      "$comment": "global_score is NOT comparable across methods. Both are max(section score), but the section score means different things: embedkde's is an unbounded KDE density ratio (higher = more anomalous, no fixed upper bound), while comprehensiveness_qa's is a 0-1 fraction of source subclaims judged OMITTED. Never rank, sort, average or threshold global_score across entries with different `method` values.",
       "items": {
         "type": "object",
         "if": {

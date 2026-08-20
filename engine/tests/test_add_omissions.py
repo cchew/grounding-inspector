@@ -84,6 +84,21 @@ def test_byte_for_byte_guard_holds_with_both_methods():
         assert updated[key] == original[key]
 
 
+def test_comprehensiveness_qa_alone_runs_with_no_embedder():
+    # The method-validation fix must let comprehensiveness_qa run on its own:
+    # embedkde is absent from `methods`, so embedder=None is legitimate, not an
+    # error. Exercises the single-entry omissions path end to end.
+    responses = [
+        json.dumps([{"claim": "alpha is bravo", "subclaims": ["alpha is bravo"]}]),
+        "Is alpha bravo?",
+        json.dumps({"status": "OMITTED", "evidence": None}),
+    ]
+    client = FakeClaudeClient(responses)
+    updated = regenerate_fixture(dict(FIXTURE), ("comprehensiveness_qa",), embedder=None, client=client)
+    assert [o["method"] for o in updated["omissions"]] == ["comprehensiveness_qa"]
+    assert updated["omissions"][0]["flagged_sections"][0]["section_id"] == "s1"
+
+
 def test_regenerate_fixture_raises_on_unknown_method():
     with pytest.raises(ValueError, match="unknown"):
         regenerate_fixture(dict(FIXTURE), ("comprehensivenes_qa",), embedder=None, client=None)

@@ -111,6 +111,25 @@ describe("OmissionPanel via Inspector — multi-method", () => {
     expect(panel.text()).toContain("policy excludes pre-existing conditions");
   });
 
+  it("active-row highlight is scoped to the clicked panel's method", async () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithBothOmissionMethods } });
+    const embedRow = w.get('[data-testid="omission-panel-embedkde"] [data-omission="s4_2"]');
+    const qaRow = w.get('[data-testid="omission-panel-comprehensiveness_qa"] [data-omission="s4_2"]');
+    await embedRow.trigger("click");
+    expect(embedRow.classes()).toContain("active");
+    expect(qaRow.classes()).not.toContain("active");
+    await qaRow.trigger("click");
+    expect(qaRow.classes()).toContain("active");
+    expect(embedRow.classes()).not.toContain("active");
+  });
+
+  it("clicking either panel's row highlights the same source span", async () => {
+    const w = mount(Inspector, { props: { fixture: fixtureWithBothOmissionMethods } });
+    const qaRow = w.get('[data-testid="omission-panel-comprehensiveness_qa"] [data-omission="s4_2"]');
+    await qaRow.trigger("click");
+    expect(w.get('[data-span="s4_2"]').classes()).toContain("span-active-omission");
+  });
+
   it("a fixture with only one omissions entry still renders exactly one panel", () => {
     const w = mount(Inspector, { props: { fixture: fixtureWithOmissions } });
     expect(w.findAll('[data-testid^="omission-panel-"]').length).toBe(1);

@@ -488,4 +488,57 @@ test.describe("Omission panel (post-regeneration)", () => {
     await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toBeVisible();
     await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toContainText("SYNTHETIC TEST DATA");
   });
+
+  // Same synthetic-injection approach as above. No committed fixture currently
+  // flags any section under either method, so both entries are faked here --
+  // the isolation this asserts only manifests when two panels each render a row
+  // for the same section_id.
+  test("travel-pds-01: an active row in one panel does not activate the same section in the other", async ({ page }) => {
+    const fixturePath = join(here, "..", "..", "fixtures", "travel-pds-01.json");
+    const fixture = JSON.parse(await readFile(fixturePath, "utf-8"));
+    const synthetic = "SYNTHETIC TEST DATA -- injected at test time via page.route(), not from a real API call or the committed fixture.";
+    fixture.omissions = [
+      {
+        method: "embedkde",
+        global_score: 1.0,
+        flagged_sections: [{ section_id: "s9", score: 1.0, top_tokens: [synthetic] }],
+        hyperparameters: { pca_components: 16, kde_bandwidth: 1.0, threshold_std: 1.5 },
+        validated: false,
+        caveat: "Omission signals are unvalidated.",
+      },
+      {
+        method: "comprehensiveness_qa",
+        global_score: 1.0,
+        flagged_sections: [{
+          section_id: "s9", score: 1.0,
+          omitted_facts: [{ fact: synthetic, question: "Does the output mention this fact?", evidence: null }],
+        }],
+        hyperparameters: { model: "claude-sonnet-4-5-20250929", flag_threshold: 0.0 },
+        validated: false,
+        caveat: "Comprehensiveness signals are unvalidated.",
+      },
+    ];
+
+    await page.route("**/fixtures/travel-pds-01.json", async (route) => {
+      await route.fulfill({ json: fixture });
+    });
+
+    await page.goto("/");
+    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await navigateTo(page, "travel-pds-01");
+
+    const embedRow = page.locator('[data-testid="omission-panel-embedkde"] [data-omission="s9"]');
+    const qaRow = page.locator('[data-testid="omission-panel-comprehensiveness_qa"] [data-omission="s9"]');
+
+    await embedRow.click();
+    await expect(embedRow).toHaveClass(/\bactive\b/);
+    await expect(qaRow).not.toHaveClass(/\bactive\b/);
+    // The shared source-doc highlight is still driven by either panel.
+    await expect(page.locator('[data-span="s9"]')).toHaveClass(/span-active-omission/);
+
+    await qaRow.click();
+    await expect(qaRow).toHaveClass(/\bactive\b/);
+    await expect(embedRow).not.toHaveClass(/\bactive\b/);
+    await expect(page.locator('[data-span="s9"]')).toHaveClass(/span-active-omission/);
+  });
 });

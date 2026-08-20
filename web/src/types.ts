@@ -23,6 +23,12 @@ export interface FlaggedSection {
 }
 export interface OmissionEntry {
   method: "embedkde" | "comprehensiveness_qa";
+  /**
+   * Not comparable across methods. `embedkde` reports an unbounded KDE density
+   * ratio; `comprehensiveness_qa` reports a 0-1 fraction of source subclaims
+   * judged OMITTED. Never rank, sort or threshold this across entries with
+   * different `method` values.
+   */
   global_score: number;
   flagged_sections: FlaggedSection[];
   hyperparameters: Record<string, number | string>;

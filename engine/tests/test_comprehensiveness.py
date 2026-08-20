@@ -75,6 +75,24 @@ def test_judge_coverage_raises_on_malformed_json():
         judge_coverage("q", "fact", "output", client, model="m")
 
 
+def test_judge_coverage_raises_truncation_error_on_max_tokens_stop():
+    # A truncated response is unparseable JSON. The generic "could not parse"
+    # message sent the reader hunting the wrong cause; stop_reason names it.
+    class TruncatedMessage:
+        content = [type("C", (), {"text": '{"status": "COVERED", "evidence": "a very long quoted'})()]
+        stop_reason = "max_tokens"
+
+    class TruncatedMessages:
+        def create(self, **kwargs):
+            return TruncatedMessage()
+
+    class TruncatedClient:
+        messages = TruncatedMessages()
+
+    with pytest.raises(ValueError, match="truncated"):
+        judge_coverage("q", "fact", "output", TruncatedClient(), model="m")
+
+
 def test_judge_coverage_raises_on_unexpected_status():
     client = FakeClaudeClient([json.dumps({"status": "MAYBE", "evidence": None})])
     with pytest.raises(ValueError, match="unexpected status"):

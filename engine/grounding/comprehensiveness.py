@@ -36,6 +36,13 @@ _JUDGE_PROMPT = (
 )
 
 
+# Matches decompose_output_claude's cap. The response is small JSON, but its
+# `evidence` field quotes a span from the candidate document, so a long section
+# needs headroom -- a truncated response is unparseable and kills the batch run
+# after real API spend has already been incurred on earlier fixtures.
+_JUDGE_MAX_TOKENS = 1024
+
+
 def judge_coverage(question: str, source_fact: str, ai_output: str, client, model: str) -> dict:
     """New prompt. JSON response, parsed with the same markdown-fence-stripping
     decompose_output_claude already uses. Raises ValueError on parse failure
@@ -49,12 +56,18 @@ def judge_coverage(question: str, source_fact: str, ai_output: str, client, mode
         f"<candidate_document>{ai_output}</candidate_document>"
     )
     msg = client.messages.create(
-        model=model, max_tokens=300,
+        model=model, max_tokens=_JUDGE_MAX_TOKENS,
         system=_JUDGE_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
     if not msg.content:
         raise ValueError("judge_coverage: received empty content from Claude")
+    if getattr(msg, "stop_reason", None) == "max_tokens":
+        raise ValueError(
+            f"judge_coverage: response hit the {_JUDGE_MAX_TOKENS}-token cap and is "
+            "truncated, so the JSON is unparseable -- the quoted `evidence` span was "
+            "likely long. Raise _JUDGE_MAX_TOKENS in grounding/comprehensiveness.py."
+        )
     raw = msg.content[0].text.strip()
     if raw.startswith("```"):
         raw = raw.split("```", 2)[1]

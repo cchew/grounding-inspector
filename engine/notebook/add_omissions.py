@@ -80,10 +80,18 @@ def run(methods: tuple[str, ...] = ("embedkde",)):
     if "embedkde" in methods:
         print("Loading pretrained FastText model (first run downloads ~1GB)...")
 
+    # Regenerate every fixture in memory first, then write. The pipeline is
+    # fail-loud/no-retry: a transient API error partway through would otherwise
+    # leave some fixtures carrying both methods and others only the ones that
+    # finished before the failure. Five small dicts -- cheap to hold.
+    results: list[tuple[pathlib.Path, str, dict]] = []
     for fid in FIXTURE_IDS:
         path = ROOT / "fixtures" / f"{fid}.json"
         fixture = json.loads(path.read_text())
         updated = regenerate_fixture(fixture, methods, embedder=embedder, client=client)
+        results.append((path, fid, updated))
+
+    for path, fid, updated in results:
         path.write_text(json.dumps(updated, indent=2))
         for result in updated["omissions"]:
             n_flagged = len(result["flagged_sections"])

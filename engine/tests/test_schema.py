@@ -80,6 +80,26 @@ def test_comprehensiveness_qa_rejects_top_tokens_field():
         validate_fixture(fx)
 
 
+def test_embedkde_rejects_omitted_facts_field():
+    # Inverse of test_comprehensiveness_qa_rejects_top_tokens_field: an embedkde
+    # entry carrying build 2's omitted_facts shape must be rejected by the
+    # `else` branch's additionalProperties: false, not silently accepted.
+    fx = json.loads((ROOT / "fixtures" / "travel-pds-01.json").read_text())
+    fx["omissions"] = [{
+        "method": "embedkde",
+        "global_score": 0.5,
+        "flagged_sections": [{
+            "section_id": "s9", "score": 0.5,
+            "omitted_facts": [{"fact": "wrong", "question": "shape?", "evidence": None}],
+        }],
+        "hyperparameters": {"pca_components": 16},
+        "validated": False,
+        "caveat": "unvalidated",
+    }]
+    with pytest.raises(Exception):
+        validate_fixture(fx)
+
+
 def test_embedkde_omission_still_valid_after_schema_restructure():
     # Regression: build 1's shape must be unaffected by the if/then split.
     fx = json.loads((ROOT / "fixtures" / "travel-pds-01.json").read_text())

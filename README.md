@@ -12,6 +12,8 @@ Built as a proof-of-concept in the travel insurance domain (Australian PDS docum
 4. **Localise** — map grounded claims back to the source span and page number
 5. **Inspect** — browse results in a Vue 3 two-pane viewer (claim list left, source doc right, click-to-highlight)
 
+Two experimental, unvalidated detectors additionally flag source content the output may have *left out* — see [Omission signals](#omission-signals).
+
 ## Architecture
 
 ```
@@ -19,7 +21,7 @@ fixtures/          JSON fixtures (source doc + AI output + labelled claims + sco
 contract/          fixture.schema.json — shared JSON Schema between engine and web
 engine/
   grounding/       Python pipeline (decompose, verify, label, localise, metrics)
-  tests/           43 pytest unit tests
+  tests/           pytest unit tests
   notebook/        validation.ipynb — RAGTruth benchmark runner (Ollama-backed)
 web/
   src/             Hono API server + Vue 3 frontend
@@ -145,6 +147,36 @@ The demo (`engine/grounding/inspect_demo.py`) wraps the 5 existing fixtures as `
 
 `grounded_claim_scorer(verifier="minicheck")` (default) routes to the same local, free verifier path as the rest of the pipeline; `verifier="haiku"` swaps in `make_claude_verifier()` — decomposition still runs locally via Ollama either way.
 
+## Omission signals
+
+Groundedness answers "is what the output says supported?". It says nothing about what the output left out. Two experimental omission detectors address that, and a fixture can carry either, both, or neither in its optional `omissions[]` array — one entry per method, rendered as its own panel in the inspector.
+
+| Method | How it works | Cost | Flags a section when |
+|--------|--------------|------|----------------------|
+| `embedkde` | Embeds source and output tokens with a pretrained FastText model, PCA-reduces, and scores each source token by KDE density ratio against the output distribution | free, local (downloads a ~1GB gensim model on first run) | its top token score exceeds mean + 1.5σ across scored sections |
+| `comprehensiveness_qa` | Decomposes each source section into subclaims, generates a closed question per subclaim, then asks the model whether the output answers it | real Claude API calls (Sonnet) per subclaim — real cost and latency | any one subclaim is judged `OMITTED` (`flag_threshold=0.0`) |
+
+**Both are unvalidated.** No ground-truth omission labels exist for these fixtures, so neither has a measured recall or precision. Every entry carries `"validated": false` and a `caveat` string that the UI renders next to the panel rather than hiding in the JSON. Treat a flagged span as a prompt to read the source, not a finding. Note also that an AI summary is far shorter than its source and will legitimately omit most source facts by construction — a high `comprehensiveness_qa` flag rate reflects that, not necessarily a detector fault.
+
+`global_score` is **not comparable across methods**: `embedkde`'s is an unbounded density ratio, `comprehensiveness_qa`'s is a 0-1 fraction of subclaims omitted. Never rank or threshold fixtures on it across methods.
+
+### Running the detectors
+
+`comprehensiveness_qa` is the only thing in this repo that spends real API money, so it is opt-in at two independent layers:
+
+1. **Method flag** — `add_omissions.py` defaults to `embedkde` only. No LLM call fires unless `comprehensiveness_qa` is named explicitly.
+2. **Structural guard** — `check_omissions_comprehensiveness_qa()` raises unless called with `allow_llm_calls=True`, so importing and calling it directly cannot incur spend by accident.
+
+```bash
+cd engine
+source .venv/bin/activate
+
+python notebook/add_omissions.py                                    # embedkde only, free (default)
+python notebook/add_omissions.py --methods embedkde comprehensiveness_qa   # billed
+```
+
+Requires `ANTHROPIC_API_KEY` in `engine/.env` or `repo/.env` for the billed path. The run regenerates all five fixtures in memory and only writes once every fixture succeeds, so a mid-run API failure leaves the committed fixtures untouched rather than half-updated. Non-omissions fields are asserted byte-for-byte unchanged before any write.
+
 ## Fixture contract
 
 Each fixture is a JSON file conforming to `contract/fixture.schema.json`. Key fields:
@@ -154,6 +186,7 @@ Each fixture is a JSON file conforming to `contract/fixture.schema.json`. Key fi
 - `claims[]` — labelled claims with `label` (`grounded` | `partial` | `unsupported`), `evidence_span_ids`, `quote`, `page`, `rationale`
 - `groundedness` — aggregate score (0–100) and counts
 - `scorecard` — recall, CI, false negatives, and domain note
+- `omissions[]` — optional; one entry per detector (`embedkde` | `comprehensiveness_qa`), each with `global_score`, `flagged_sections[]`, `hyperparameters`, `validated`, and `caveat`. The schema branches on `method`: `flagged_sections[]` carries `top_tokens` for `embedkde` and `omitted_facts` for `comprehensiveness_qa`, and cross-method shapes are rejected
 
 ## License
 
