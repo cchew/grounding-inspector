@@ -102,6 +102,117 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 1.0,
+      "flagged_sections": [
+        {
+          "section_id": "s1",
+          "score": 0.75,
+          "omitted_facts": [
+            {
+              "fact": "The document is called 'SunSafe Travel Insurance PDS'",
+              "question": "What is the name of the document?",
+              "evidence": null
+            },
+            {
+              "fact": "SunSafe is the name associated with this travel insurance product",
+              "question": "What is the name of this travel insurance product?",
+              "evidence": null
+            },
+            {
+              "fact": "The document describes what is not covered",
+              "question": "What does the document describe as not covered?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s4_2",
+          "score": 0.5,
+          "omitted_facts": [
+            {
+              "fact": "The coverage applies to emergency treatment",
+              "question": "Does the coverage apply to emergency treatment?",
+              "evidence": null
+            },
+            {
+              "fact": "The coverage applies while travelling",
+              "question": "Does the coverage apply while travelling?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s7_1",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "Baggage is covered",
+              "question": "Is baggage covered?",
+              "evidence": null
+            },
+            {
+              "fact": "Personal effects are covered",
+              "question": "Does the document state that personal effects are covered?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a sub-limit of $1,000 per item",
+              "question": "What is the sub-limit per item?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a sub-limit of $5,000 in total",
+              "question": "What is the total sub-limit amount stated in the document?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s9",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "Claims can arise from extreme sports",
+              "question": "Does the document state that claims can arise from extreme sports?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims arising from extreme sports are excluded from payment",
+              "question": "Does the document state that claims arising from extreme sports are excluded from payment?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims can arise from war",
+              "question": "Does the document state that claims can arise from war?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims arising from war are excluded from payment",
+              "question": "Does the document state that claims arising from war are excluded from payment?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims can arise from pre-existing conditions",
+              "question": "Does the document state that claims can arise from pre-existing conditions?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims arising from pre-existing conditions are excluded from payment",
+              "question": "Does the document state that claims arising from pre-existing conditions are excluded from payment?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": {
+        "model": "claude-sonnet-4-5-20250929",
+        "flag_threshold": 0.0
+      },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding. AI-generated summaries are typically much shorter than their source documents and will legitimately omit most source facts by construction -- a high flag rate reflects this, not necessarily a detector fault."
     }
   ]
 }

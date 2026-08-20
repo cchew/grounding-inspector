@@ -113,6 +113,112 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 1.0,
+      "flagged_sections": [
+        {
+          "section_id": "s1",
+          "score": 0.5,
+          "omitted_facts": [
+            {
+              "fact": "The document is titled or identified as 'SunSafe Travel Insurance PDS'",
+              "question": "Does the document identify itself as 'SunSafe Travel Insurance PDS' or contain this phrase as its title?",
+              "evidence": null
+            },
+            {
+              "fact": "The document contains information about what is not covered",
+              "question": "What information does the document contain about what is not covered?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s5_1",
+          "score": 0.8,
+          "omitted_facts": [
+            {
+              "fact": "The delay threshold that triggers eligibility is more than 6 hours",
+              "question": "What is the delay threshold in hours that triggers eligibility?",
+              "evidence": null
+            },
+            {
+              "fact": "The delay must be to a scheduled departure",
+              "question": "Does the document state that the delay must be to a scheduled departure?",
+              "evidence": null
+            },
+            {
+              "fact": "The delay must be due to a covered event",
+              "question": "Does the document state that the delay must be due to a covered event?",
+              "evidence": null
+            },
+            {
+              "fact": "The maximum total claimable amount is $1,000",
+              "question": "What is the maximum total claimable amount?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s5_2",
+          "score": 0.5,
+          "omitted_facts": [
+            {
+              "fact": "The reimbursement applies to prepaid costs",
+              "question": "Does the document state that the reimbursement applies to prepaid costs?",
+              "evidence": null
+            },
+            {
+              "fact": "The reimbursement applies to travel costs",
+              "question": "Does the document state that the reimbursement applies to travel costs?",
+              "evidence": null
+            },
+            {
+              "fact": "Reimbursement requires cancellation for a covered reason",
+              "question": "Does the document state that reimbursement requires cancellation for a covered reason?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s9",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "Changes of mind generate claims that are excluded from coverage",
+              "question": "Does the document state that changes of mind generate claims that are excluded from coverage?",
+              "evidence": null
+            },
+            {
+              "fact": "Strike action known before booking generates claims that are excluded from coverage",
+              "question": "Does the policy exclude coverage for claims arising from strike action that was known before the booking was made?",
+              "evidence": null
+            },
+            {
+              "fact": "The strike action must have been known before the booking was made for the exclusion to apply",
+              "question": "Does the policy exclusion require that the strike action was known or could reasonably have been known before the booking was made?",
+              "evidence": null
+            },
+            {
+              "fact": "Financial collapse of a carrier generates claims that are excluded from coverage",
+              "question": "Does the document state that claims resulting from a carrier's financial collapse are excluded from coverage?",
+              "evidence": null
+            },
+            {
+              "fact": "The excluded financial collapse must be of a carrier (transport provider)",
+              "question": "Does the document state that the excluded financial collapse must be of a carrier or transport provider?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": {
+        "model": "claude-sonnet-4-5-20250929",
+        "flag_threshold": 0.0
+      },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding. AI-generated summaries are typically much shorter than their source documents and will legitimately omit most source facts by construction -- a high flag rate reflects this, not necessarily a detector fault."
     }
   ]
 }

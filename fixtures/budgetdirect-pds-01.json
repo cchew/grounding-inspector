@@ -113,6 +113,172 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 1.0,
+      "flagged_sections": [
+        {
+          "section_id": "bd_3_wording",
+          "score": 0.9285714285714286,
+          "omitted_facts": [
+            {
+              "fact": "Payment is conditional on circumstances being outside Your control",
+              "question": "Does the document state that payment is conditional on circumstances being outside Your control?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment is conditional on circumstances being unforeseeable at the Relevant Time",
+              "question": "Does the document state that payment is conditional on circumstances being unforeseeable at the Relevant Time?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment covers the unused portion of prepaid travel arrangements",
+              "question": "What portion of prepaid travel arrangements does the payment cover?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment covers the unused portion of prepaid accommodation arrangements",
+              "question": "Does the payment cover the unused portion of prepaid accommodation arrangements?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment only covers arrangements that are non-refundable",
+              "question": "Does the document state that payment only covers non-refundable arrangements?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment only covers arrangements that are not recoverable in any other way",
+              "question": "Does the document state that payment only covers arrangements that are not recoverable in any other way?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment covers travel agent's commission",
+              "question": "Does the payment cover the travel agent's commission?",
+              "evidence": null
+            },
+            {
+              "fact": "The commission payment is limited to $4,000",
+              "question": "What is the maximum commission payment amount?",
+              "evidence": null
+            },
+            {
+              "fact": "The commission payment is limited to the amount earned",
+              "question": "Is the commission payment limited to the amount earned?",
+              "evidence": null
+            },
+            {
+              "fact": "The payment is the lesser of $4,000 or the amount earned",
+              "question": "What is the maximum payment amount, and how is it determined in relation to the amount earned?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment covers frequent flyer points lost by You",
+              "question": "Does the payment cover frequent flyer points lost by You?",
+              "evidence": null
+            },
+            {
+              "fact": "Payment covers similar flight reward points lost by You",
+              "question": "Does the payment cover flight reward points that were lost by you?",
+              "evidence": null
+            },
+            {
+              "fact": "The payment is for the value of the points lost",
+              "question": "What is the payment for?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "bd_3_limit",
+          "score": 0.5,
+          "omitted_facts": [
+            {
+              "fact": "International Comprehensive cancellation benefit exists",
+              "question": "Does the document state that an International Comprehensive cancellation benefit exists?",
+              "evidence": null
+            },
+            {
+              "fact": "The chosen amount is displayed on the Certificate of Insurance",
+              "question": "What information is displayed on the Certificate of Insurance?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "bd_3_excl_pandemic",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "The entity will not pay for cancellation caused by an Epidemic",
+              "question": "Does the document state that cancellation caused by an Epidemic is not covered or not paid for by the entity?",
+              "evidence": null
+            },
+            {
+              "fact": "The entity will not pay for cancellation caused by a Pandemic",
+              "question": "Does the document state that the entity will not pay for cancellation caused by a Pandemic?",
+              "evidence": null
+            },
+            {
+              "fact": "The entity will not pay for cancellation caused by an outbreak of an infectious disease",
+              "question": "Does the document state that the entity will not pay for cancellation caused by an outbreak of an infectious disease?",
+              "evidence": null
+            },
+            {
+              "fact": "The entity will not pay for cancellation caused by any derivative of such viruses",
+              "question": "Does the document state that the entity will not pay for cancellation caused by any derivative of such viruses?",
+              "evidence": null
+            },
+            {
+              "fact": "The entity will not pay for cancellation caused by any mutation of such viruses",
+              "question": "Does the document state that the entity will not pay for cancellation caused by any mutation of such viruses?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "bd_3_excl_redundancy",
+          "score": 0.8571428571428571,
+          "omitted_facts": [
+            {
+              "fact": "The insurer will not pay for cancellation caused by contractual obligations",
+              "question": "Does the policy exclude coverage for cancellations caused by contractual obligations?",
+              "evidence": null
+            },
+            {
+              "fact": "The insurer will not pay for cancellation caused by business obligations",
+              "question": "Does the policy exclude coverage for trip cancellation due to business obligations?",
+              "evidence": null
+            },
+            {
+              "fact": "The insurer will not pay for cancellation caused by the policyholder's financial situation",
+              "question": "Does the policy exclude coverage for trip cancellation due to the policyholder's financial circumstances?",
+              "evidence": null
+            },
+            {
+              "fact": "The redundancy must be from permanent full-time employment in Australia OR permanent part-time employment in Australia",
+              "question": "What types of employment must the redundancy be from in order to qualify?",
+              "evidence": null
+            },
+            {
+              "fact": "The policyholder must not have been aware of the redundancy before the Relevant Time",
+              "question": "Did the policyholder have awareness of the redundancy before the Relevant Time?",
+              "evidence": null
+            },
+            {
+              "fact": "The policyholder must not have been aware of the redundancy at the Relevant Time",
+              "question": "Does the document state that the policyholder must not have been aware of the redundancy at the Relevant Time?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": {
+        "model": "claude-sonnet-4-5-20250929",
+        "flag_threshold": 0.0
+      },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding. AI-generated summaries are typically much shorter than their source documents and will legitimately omit most source facts by construction -- a high flag rate reflects this, not necessarily a detector fault."
     }
   ]
 }

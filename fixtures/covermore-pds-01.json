@@ -122,6 +122,202 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 1.0,
+      "flagged_sections": [
+        {
+          "section_id": "cov_5_table",
+          "score": 0.7058823529411765,
+          "omitted_facts": [
+            {
+              "fact": "There is an International Benefits Table for the Comprehensive Plan",
+              "question": "Does the Comprehensive Plan include an International Benefits Table?",
+              "evidence": null
+            },
+            {
+              "fact": "The total limit for Luggage and Travel Documents coverage is $15,000",
+              "question": "What is the total coverage limit for Luggage and Travel Documents?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a per-item limit category for Phone or Smart Watch",
+              "question": "Does the policy state that Phone or Smart Watch is a per-item limit category?",
+              "evidence": null
+            },
+            {
+              "fact": "The per-item limit for Phone or Smart Watch is $1,500",
+              "question": "What is the per-item limit for Phone or Smart Watch coverage?",
+              "evidence": null
+            },
+            {
+              "fact": "The per-item limit for Laptop Computer is $4,000",
+              "question": "What is the per-item limit for Laptop Computer?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a per-item limit category for Tablet Computer",
+              "question": "Does the document state that there is a per-item limit category for Tablet Computer?",
+              "evidence": null
+            },
+            {
+              "fact": "The per-item limit for Tablet Computer is $3,000",
+              "question": "What is the per-item limit for Tablet Computer?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a per-item limit category for Drone",
+              "question": "What is the per-item limit category for Drone?",
+              "evidence": null
+            },
+            {
+              "fact": "The per-item limit for Drone is $1,200",
+              "question": "What is the per-item coverage limit for drones?",
+              "evidence": null
+            },
+            {
+              "fact": "The per-item limit for Jewellery, watch or any other item is $1,200",
+              "question": "What is the per-item limit for jewellery, watches, or any other item?",
+              "evidence": null
+            },
+            {
+              "fact": "There is a Delayed Luggage Allowance benefit",
+              "question": "Does the document state that there is a Delayed Luggage Allowance benefit?",
+              "evidence": null
+            },
+            {
+              "fact": "The Delayed Luggage Allowance amount is $1,100",
+              "question": "What is the Delayed Luggage Allowance amount?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "cov_5_wording",
+          "score": 0.8571428571428571,
+          "omitted_facts": [
+            {
+              "fact": "The coverage applies during the Period of Insurance",
+              "question": "When does the coverage apply?",
+              "evidence": null
+            },
+            {
+              "fact": "The coverage applies when items are lost",
+              "question": "Does the coverage apply when items are lost?",
+              "evidence": null
+            },
+            {
+              "fact": "The coverage applies when items are stolen",
+              "question": "Does the coverage apply when items are stolen?",
+              "evidence": null
+            },
+            {
+              "fact": "The coverage applies when items are damaged",
+              "question": "Does the coverage apply when items are damaged?",
+              "evidence": null
+            },
+            {
+              "fact": "Depreciation is deducted before determining repair value",
+              "question": "Is depreciation deducted before determining repair value?",
+              "evidence": null
+            },
+            {
+              "fact": "The insurer will repair the item if it is practical to do so",
+              "question": "Does the policy state that the insurer will repair the item if it is practical to do so?",
+              "evidence": null
+            },
+            {
+              "fact": "The insurer will repair the item if it is economic to do so",
+              "question": "Will the insurer repair the item if it is economic to do so?",
+              "evidence": null
+            },
+            {
+              "fact": "If repair is not practical and economic, the insurer will take alternative action",
+              "question": "What action does the insurer take when repair is not practical and economic?",
+              "evidence": null
+            },
+            {
+              "fact": "One alternative is to replace the item",
+              "question": "What is one alternative mentioned for dealing with the item?",
+              "evidence": null
+            },
+            {
+              "fact": "Another alternative is to provide a replacement voucher",
+              "question": "Does the document state that providing a replacement voucher is an alternative?",
+              "evidence": null
+            },
+            {
+              "fact": "If neither repair nor replacement options apply, the insurer will provide monetary compensation",
+              "question": "What does the insurer provide when neither repair nor replacement options apply?",
+              "evidence": null
+            },
+            {
+              "fact": "The compensation amount is the monetary value of the item",
+              "question": "What is the compensation amount equal to?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "cov_5_excl_vehicle",
+          "score": 0.8333333333333334,
+          "omitted_facts": [
+            {
+              "fact": "The policy will not pay for items left unattended in any motor vehicle overnight",
+              "question": "Does the policy exclude coverage for items left unattended in a motor vehicle overnight?",
+              "evidence": null
+            },
+            {
+              "fact": "The policy will not pay for items left unattended in any towed land vehicle overnight",
+              "question": "Does the policy exclude coverage for items left unattended in a towed land vehicle overnight?",
+              "evidence": null
+            },
+            {
+              "fact": "The non-payment applies even if items were in a concealed storage compartment",
+              "question": "Does the policy state that non-payment applies even when items were stored in a concealed storage compartment?",
+              "evidence": null
+            },
+            {
+              "fact": "The policy has a $500 limit per item for items left unattended in any motor vehicle or towed land vehicle",
+              "question": "What is the per-item limit for property left unattended in a motor vehicle or towed land vehicle?",
+              "evidence": null
+            },
+            {
+              "fact": "The policy has a $2,000 total limit for all items left unattended in any motor vehicle or towed land vehicle",
+              "question": "What is the total limit for all items left unattended in any motor vehicle or towed land vehicle?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "cov_5_excl_public",
+          "score": 1.0,
+          "omitted_facts": [
+            {
+              "fact": "The policy excludes coverage for items left unattended in a public place",
+              "question": "Does the policy exclude coverage for items that are left unattended in a public place?",
+              "evidence": null
+            },
+            {
+              "fact": "The policy excludes coverage for valuables placed in checked baggage",
+              "question": "Does the policy exclude coverage for valuables placed in checked baggage?",
+              "evidence": null
+            },
+            {
+              "fact": "The exclusion applies when valuables are checked with a transport provider",
+              "question": "Does the exclusion apply when valuables are checked with a transport provider?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": {
+        "model": "claude-sonnet-4-5-20250929",
+        "flag_threshold": 0.0
+      },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding. AI-generated summaries are typically much shorter than their source documents and will legitimately omit most source facts by construction -- a high flag rate reflects this, not necessarily a detector fault."
     }
   ]
 }

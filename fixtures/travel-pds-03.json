@@ -129,6 +129,138 @@
       },
       "validated": false,
       "caveat": "Omission signals are unvalidated: no ground-truth omission labels exist for these fixtures, and detection hyperparameters (PCA components, KDE bandwidth, per-document threshold) are unadjusted defaults, not calibrated against labeled data. Treat a flagged span as a prompt to review the source directly, not a finding."
+    },
+    {
+      "method": "comprehensiveness_qa",
+      "global_score": 0.8333333333333334,
+      "flagged_sections": [
+        {
+          "section_id": "s1",
+          "score": 0.8,
+          "omitted_facts": [
+            {
+              "fact": "The document is titled or identified as 'SunSafe Travel Insurance PDS'",
+              "question": "Does the document identify itself as \"SunSafe Travel Insurance PDS\" or contain this exact title?",
+              "evidence": null
+            },
+            {
+              "fact": "SunSafe is associated with travel insurance",
+              "question": "Is SunSafe associated with travel insurance?",
+              "evidence": null
+            },
+            {
+              "fact": "PDS refers to a Product Disclosure Statement",
+              "question": "What does PDS refer to?",
+              "evidence": null
+            },
+            {
+              "fact": "The document contains information about what is not covered",
+              "question": "What exclusions or items that are not covered does the document describe?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s3_1",
+          "score": 0.6,
+          "omitted_facts": [
+            {
+              "fact": "Pre-existing medical conditions are excluded by default",
+              "question": "Does the document state that pre-existing medical conditions are excluded by default?",
+              "evidence": null
+            },
+            {
+              "fact": "Pre-existing medical conditions can be covered if additional premium is paid",
+              "question": "Does the document state that pre-existing medical conditions can be covered if an additional premium is paid?",
+              "evidence": null
+            },
+            {
+              "fact": "Both declaration and payment of additional premium are required for coverage of pre-existing conditions",
+              "question": "Does the document state that both declaration and payment of additional premium are required for coverage of pre-existing conditions?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s3_2",
+          "score": 0.8,
+          "omitted_facts": [
+            {
+              "fact": "Counselling services for mental health conditions are covered",
+              "question": "Does the document state that counselling services for mental health conditions are covered?",
+              "evidence": null
+            },
+            {
+              "fact": "The coverage limit for counselling services is $500",
+              "question": "What is the coverage limit for counseling services?",
+              "evidence": null
+            },
+            {
+              "fact": "Coverage applies when travel is disrupted",
+              "question": "When does coverage apply according to the document?",
+              "evidence": null
+            },
+            {
+              "fact": "Coverage requires disruption by a covered event",
+              "question": "Does the policy require that coverage only applies when there is disruption caused by a covered event?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s6_1",
+          "score": 0.5,
+          "omitted_facts": [
+            {
+              "fact": "Snowboarding is covered at no additional cost",
+              "question": "Does the document state that snowboarding is covered at no additional cost?",
+              "evidence": null
+            },
+            {
+              "fact": "Skydiving is excluded",
+              "question": "Is skydiving excluded from coverage?",
+              "evidence": null
+            }
+          ]
+        },
+        {
+          "section_id": "s9",
+          "score": 0.8333333333333334,
+          "omitted_facts": [
+            {
+              "fact": "Claims arising from extreme sports are excluded from payment",
+              "question": "Does the document state that claims arising from extreme sports are excluded from payment?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims can arise from war",
+              "question": "Does the document state that claims can arise from war?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims arising from war are excluded from payment",
+              "question": "Does the document state that claims arising from war are excluded from payment?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims can arise from pre-existing conditions",
+              "question": "Does the document state that claims can arise from pre-existing conditions?",
+              "evidence": null
+            },
+            {
+              "fact": "Claims arising from pre-existing conditions are excluded from payment",
+              "question": "Does the document state that claims arising from pre-existing conditions are excluded from payment?",
+              "evidence": null
+            }
+          ]
+        }
+      ],
+      "hyperparameters": {
+        "model": "claude-sonnet-4-5-20250929",
+        "flag_threshold": 0.0
+      },
+      "validated": false,
+      "caveat": "Comprehensiveness signals are unvalidated: no ground-truth omission labels exist for these fixtures, and flag_threshold (any single OMITTED fact flags its section) is an unadjusted default -- a single LLM misjudgment among many subclaims can flag a section. Treat a flagged span as a prompt to review the source directly, not a finding. AI-generated summaries are typically much shorter than their source documents and will legitimately omit most source facts by construction -- a high flag rate reflects this, not necessarily a detector fault."
     }
   ]
 }
