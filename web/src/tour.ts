@@ -1,6 +1,6 @@
 // src/tour.ts
 // First-visit guided walkthrough: fixture switcher, claim list, source pane,
-// and the help button. Shown once per browser (localStorage flag).
+// omissions panel, and the help button. Shown once per browser (localStorage flag).
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
@@ -57,6 +57,13 @@ export function startTour(): ReturnType<typeof driver> {
         popover: {
           title: "Source document",
           description: "Clicking a claim jumps to and highlights the exact span of the source document it's checked against.",
+        },
+      },
+      {
+        element: ".omissions-panel",
+        popover: {
+          title: "Possible omissions",
+          description: "Two experimental signals flag source sections that look absent from the AI output. Click a flagged row to jump to that part of the document. Unvalidated — treat a flag as a prompt to review, not a finding.",
         },
       },
       {

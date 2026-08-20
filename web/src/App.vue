@@ -95,7 +95,7 @@ function label(id: string): string {
 
 <style scoped>
 .app-shell {
-  max-width: var(--reading-width);
+  max-width: var(--app-max-width);
   margin: 0 auto;
   padding: var(--s-6) var(--s-5);
 }

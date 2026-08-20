@@ -20,7 +20,7 @@ const unsupportedExample = computed(() => exampleFor("unsupported"));
 
       <section class="modal-section">
         <h2>What this measures</h2>
-        <p>AI-generated text can state things that sound plausible but aren't actually backed by the source document it's supposed to be summarising. Grounding Inspector checks each claim in an AI output against the source document, and shows you which claims are backed by evidence, which are partially backed, and which have no supporting evidence at all.</p>
+        <p>AI-generated text can state things that sound plausible but aren't actually backed by the source document it's supposed to be summarising. Grounding Inspector checks each claim in an AI output against the source document, and shows you which claims are backed by evidence, which are partially backed, and which have no supporting evidence at all. A separate <strong>possible omissions</strong> panel flags source sections that look absent from the output altogether — see <a href="#known-limitations">Known limitations</a> below for how those signals work and their caveats.</p>
       </section>
 
       <section class="modal-section">
@@ -77,7 +77,7 @@ const unsupportedExample = computed(() => exampleFor("unsupported"));
         <p class="modal-note">Recall is prioritised over agreement because a missed hallucination (false negative) is costlier than a false alarm for this tool's intended use.</p>
       </section>
 
-      <section class="modal-section">
+      <section id="known-limitations" class="modal-section">
         <h2>Known limitations</h2>
         <ul>
           <li><strong>Document length.</strong> This tool checks every claim against the entire document rather than retrieving relevant sections first, so it doesn't miss evidence a retrieval step might filter out — but cost and latency grow with document length. Validated on short-to-medium documents; very long documents (100+ pages) would need a retrieval pre-filter, not yet built.</li>

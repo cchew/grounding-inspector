@@ -67,18 +67,6 @@ function onSelectOmission(method: string, section: FlaggedSection) {
           <span class="legend-chip unsupported">✗ unsupported</span>
         </div>
         <ClaimList :claims="fixture.claims" :active-id="active?.id ?? null" @select="onSelectClaim" />
-        <template v-for="entry in fixture.omissions ?? []" :key="entry.method">
-          <h2 class="pane-heading omission-heading">
-            Possible Omissions ({{ entry.method === 'embedkde' ? 'EmbedKDECheck' : 'Comprehensiveness (QA)' }})
-          </h2>
-          <OmissionPanel
-            :method="entry.method"
-            :flagged-sections="entry.flagged_sections"
-            :caveat="entry.caveat"
-            :active-section-id="entry.method === activeOmissionMethod ? activeOmissionSectionId : null"
-            @select="(section) => onSelectOmission(entry.method, section)"
-          />
-        </template>
       </section>
 
       <!-- Right: source document -->
@@ -95,6 +83,28 @@ function onSelectOmission(method: string, section: FlaggedSection) {
         />
       </section>
 
+    </div>
+
+    <!-- Possible omissions: full-width, secondary/unvalidated signal -->
+    <div v-if="fixture.omissions?.length" class="omissions-panel">
+      <div class="omissions-panel-heading">
+        <h2>Possible Omissions</h2>
+        <p>Experimental, unvalidated signals — treat a flagged row as a prompt to review the source, not a finding.</p>
+      </div>
+      <div class="omissions-columns">
+        <section v-for="entry in fixture.omissions" :key="entry.method" class="omissions-column">
+          <h3 class="pane-heading omission-heading">
+            {{ entry.method === 'embedkde' ? 'EmbedKDECheck' : 'Comprehensiveness (QA)' }}
+          </h3>
+          <OmissionPanel
+            :method="entry.method"
+            :flagged-sections="entry.flagged_sections"
+            :caveat="entry.caveat"
+            :active-section-id="entry.method === activeOmissionMethod ? activeOmissionSectionId : null"
+            @select="(section) => onSelectOmission(entry.method, section)"
+          />
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -234,5 +244,45 @@ function onSelectOmission(method: string, section: FlaggedSection) {
   color: var(--color-ink-2);
   padding: var(--s-2) var(--s-4) 0;
   font-style: italic;
+}
+
+/* ── Possible omissions (full-width, secondary/unvalidated signal) ── */
+.omissions-panel {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+}
+
+.omissions-panel-heading {
+  padding: var(--s-4) var(--s-5) var(--s-3);
+}
+
+.omissions-panel-heading h2 {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+.omissions-panel-heading p {
+  font-size: 0.75rem;
+  color: var(--color-ink-3);
+  font-style: italic;
+  margin-top: var(--s-1);
+}
+
+.omissions-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-5);
+  padding: 0 var(--s-5) var(--s-5);
+}
+
+.omissions-column {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 </style>

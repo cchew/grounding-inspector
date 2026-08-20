@@ -28,13 +28,14 @@ describe("tour", () => {
     expect(driveMock).toHaveBeenCalled();
   });
 
-  it("targets the four key first-visit elements in order", () => {
+  it("targets the five key first-visit elements in order", () => {
     startTour();
     const targets = lastConfig.steps.map((s: any) => s.element);
     expect(targets).toEqual([
       ".fixture-nav",
       ".pane-claims",
       ".pane-source",
+      ".omissions-panel",
       ".help-btn",
     ]);
   });

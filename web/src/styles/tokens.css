@@ -52,7 +52,7 @@
   --s-8: 64px;
 
   /* Layout */
-  --reading-width: 960px;
+  --app-max-width: 1440px;
 
   /* Shape */
   --radius-sm: 8px;
