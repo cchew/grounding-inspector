@@ -47,6 +47,16 @@ def build_client():
 
 
 def build_claude_client():
-    """Anthropic client. Reads ANTHROPIC_API_KEY from environment."""
+    """Anthropic client. Reads ANTHROPIC_API_KEY from the environment, falling
+    back to engine/.env then repo/.env -- the two locations the README documents
+    and pilot_claude.py already loads. load_dotenv does not override variables
+    already set, so an exported key still wins."""
+    import pathlib
+
     import anthropic
+    from dotenv import load_dotenv
+
+    here = pathlib.Path(__file__).resolve().parent
+    load_dotenv(here.parent / ".env")        # engine/.env
+    load_dotenv(here.parents[1] / ".env")    # repo/.env
     return anthropic.Anthropic()
