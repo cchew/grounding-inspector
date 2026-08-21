@@ -11,6 +11,7 @@ defineEmits<{ select: [section: FlaggedSection] }>();
 
 <template>
   <div class="omission-panel" :data-testid="`omission-panel-${method}`">
+    <p :data-testid="`omission-caveat-${method}`" class="omission-caveat">{{ caveat }}</p>
     <ul class="omission-list" v-if="flaggedSections.length > 0">
       <li v-for="f in flaggedSections" :key="f.section_id" :data-omission="f.section_id"
           :class="['omission', { active: f.section_id === activeSectionId }]"
@@ -23,7 +24,6 @@ defineEmits<{ select: [section: FlaggedSection] }>();
       </li>
     </ul>
     <p v-else class="no-omissions">No sections flagged.</p>
-    <p :data-testid="`omission-caveat-${method}`" class="omission-caveat">{{ caveat }}</p>
   </div>
 </template>
 
@@ -61,7 +61,7 @@ defineEmits<{ select: [section: FlaggedSection] }>();
 }
 
 .omission-caveat {
-  margin: var(--s-2) var(--s-4) var(--s-3);
+  margin: var(--s-3) var(--s-4) var(--s-2);
   padding: var(--s-2) var(--s-3);
   background: var(--color-surface-hover);
   border-left: 3px solid var(--color-ink-3);
