@@ -15,6 +15,8 @@ image = (
         "pypdf>=5.0",
         "python-docx>=1.1",
         "psycopg[binary]>=3.2",
+        "scipy==1.13.1",
+        "prov>=3.1,<4",
     )
     .add_local_python_source("grounding")
 )
