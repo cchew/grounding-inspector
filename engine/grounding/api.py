@@ -69,27 +69,28 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         device_token = _resolve_device_token(request, response)
+        cookie_header = response.headers.get("set-cookie")
+
+        def _http_error(status_code: int, detail: str) -> None:
+            headers = {"set-cookie": cookie_header} if cookie_header else None
+            raise HTTPException(status_code=status_code, detail=detail, headers=headers)
+
         client_ip = request.client.host if request.client else "unknown"
 
         conn = db_conn_factory()
         try:
             if not try_acquire_device_lock(conn, device_token):
-                raise HTTPException(
-                    status_code=429,
-                    detail="A check is already running for this device — please wait for it to finish",
-                )
+                _http_error(429, "A check is already running for this device — please wait for it to finish")
             if not check_and_increment(conn, f"device:{device_token}", FREE_TIER_DAILY_LIMIT, date.today()):
-                raise HTTPException(status_code=429, detail="Today's free checks are used up. Try again tomorrow.")
+                _http_error(429, "Today's free checks are used up. Try again tomorrow.")
             if not check_and_increment(conn, f"ip:{client_ip}", IP_DAILY_BACKSTOP, date.today()):
-                raise HTTPException(
-                    status_code=429, detail="Too many checks from this network today. Try again tomorrow.",
-                )
+                _http_error(429, "Too many checks from this network today. Try again tomorrow.")
 
             try:
                 return run_live_check(ai_output, sections, client)
             except Exception:
                 logger.exception("live check pipeline failed")
-                raise HTTPException(status_code=502, detail="The grounding check failed. Please try again.")
+                _http_error(502, "The grounding check failed. Please try again.")
         finally:
             conn.close()
 

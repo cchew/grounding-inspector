@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from grounding.api import FREE_TIER_DAILY_LIMIT, MAX_AI_OUTPUT_CHARS, MAX_UPLOAD_BYTES, create_app
+from grounding.api import FREE_TIER_DAILY_LIMIT, IP_DAILY_BACKSTOP, MAX_AI_OUTPUT_CHARS, MAX_UPLOAD_BYTES, create_app
 from grounding.quota import mint_device_token
 
 SECRET = b"test-secret"
@@ -136,6 +136,22 @@ def test_check_returns_generic_message_on_pipeline_failure(monkeypatch):
     response = client.post("/check", data={"ai_output": "x"}, files=_files())
     assert response.status_code == 502
     assert "internal detail" not in response.text
+
+
+def test_check_sets_device_token_cookie_even_when_first_request_is_rejected_by_quota(monkeypatch):
+    # Regression: a first-time visitor (no cookie yet) whose very first
+    # request hits an error path after _resolve_device_token must still
+    # receive Set-Cookie -- otherwise every retry mints a fresh token and
+    # the per-device quota never binds them.
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    # TestClient's default client address host is "testclient" -- pre-exhaust
+    # the IP backstop so the brand-new device's very first request 429s.
+    store = {"quota": {("ip:testclient", date.today()): IP_DAILY_BACKSTOP}, "locks": {}}
+    client, _ = _make_client(quota_store=store)
+    response = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert response.status_code == 429
+    assert "gi_device_token" in response.cookies
 
 
 def test_check_success_returns_claims_and_groundedness(monkeypatch):
