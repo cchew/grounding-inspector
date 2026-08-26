@@ -41,6 +41,19 @@ export interface Fixture {
   ai_output: string;
   claims: Claim[];
   groundedness: Groundedness;
-  scorecard: Scorecard;
+  // Optional: live-check results have no corpus-level validation stats (see
+  // live_disclosure below) — only browsed fixtures carry a real scorecard.
+  scorecard?: Scorecard;
   omissions?: OmissionEntry[];
+  // Present only for live-check results; HelpModal shows this in place of
+  // the scorecard-based domain-note paragraph when set.
+  live_disclosure?: string;
+}
+
+export interface LiveCheckApiResponse {
+  ai_output: string;
+  source: { sections: Section[] };
+  claims: Claim[];
+  groundedness: Groundedness;
+  verifier_model: string;
 }
