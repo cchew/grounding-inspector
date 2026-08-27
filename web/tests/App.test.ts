@@ -36,6 +36,40 @@ describe("App disclaimer", () => {
   });
 });
 
+describe("header controls on the default upload view", () => {
+  it("opens the help modal with no result loaded", async () => {
+    // Regression: HelpModal was mounted only when a fixture or a live
+    // result existed, so on the (new) default upload landing view the Help
+    // button silently did nothing.
+    const wrapper = mount(App);
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="help-modal"]').exists()).toBe(false);
+    await wrapper.find('[data-testid="help-button"]').trigger("click");
+    expect(wrapper.find('[data-testid="help-modal"]').exists()).toBe(true);
+  });
+
+  it("hides the tour trigger in upload mode and shows it in browse mode", async () => {
+    // Every tour step targets a fixture-browser selector; none of them
+    // exist on the upload view, so the tour is only offered where it works.
+    global.fetch = vi.fn((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve(url === "/fixtures/index.json" ? ["fixture-a"] : minimalFixture("fixture-a")),
+      } as Response)
+    ) as unknown as typeof fetch;
+
+    const wrapper = mount(App);
+    await flushPromises();
+    expect(wrapper.find(".tour-btn").exists()).toBe(false);
+
+    await wrapper.find(".sample-link").trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".tour-btn").exists()).toBe(true);
+  });
+});
+
 describe("layout stability on fixture switch", () => {
   it("main survives the collapse when switching from a loaded fixture to a loading one", async () => {
     // Regression: watch(selectedId, ...) sets fixture.value = null while

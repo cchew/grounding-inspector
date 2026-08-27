@@ -69,3 +69,28 @@ test("live check: sample link switches to the fixture browser", async ({ page })
   await page.getByText("No document handy? Try a sample fixture instead.").click();
   await expect(page.locator(".fixture-nav")).toBeVisible();
 });
+
+test("live check: help modal opens on the default landing view, before any result", async ({ page }) => {
+  // Regression: HelpModal was mounted only once a fixture or live result
+  // existed, so the header's Help button silently did nothing on the
+  // upload-first landing view.
+  await page.goto("/");
+  await expect(page.getByTestId("ai-output-input")).toBeVisible();
+  await expect(page.getByTestId("help-modal")).toHaveCount(0);
+
+  await page.getByTestId("help-button").click();
+  await expect(page.getByTestId("help-modal")).toBeVisible();
+  await expect(page.getByTestId("verifier-table")).toHaveCount(0);
+  await expect(page.getByTestId("scope-declaration")).toBeVisible();
+});
+
+test("live check: the guided tour is only offered in browse mode", async ({ page }) => {
+  // Every tour step targets a fixture-browser selector, none of which exist
+  // on the upload view.
+  await page.addInitScript(() => localStorage.setItem("gi-tour-seen", "1"));
+  await page.goto("/");
+  await expect(page.locator(".tour-btn")).toHaveCount(0);
+
+  await page.getByText("No document handy? Try a sample fixture instead.").click();
+  await expect(page.locator(".tour-btn")).toBeVisible();
+});
