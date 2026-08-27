@@ -34,12 +34,19 @@ app = modal.App("grounding-inspector-live", image=image)
 )
 @modal.asgi_app(label="grounding-inspector-live-api")
 def fastapi_app():
+    import logging
     import os
 
     import anthropic
     import psycopg
 
     from grounding.api import create_app
+
+    # Without a configured handler, Python's logging module silently drops
+    # anything below WARNING (the root logger's "handler of last resort" only
+    # fires at WARNING+), so grounding_inspector.api's logger.info/.exception
+    # calls would otherwise never reach `modal app logs` at all.
+    logging.basicConfig(level=logging.INFO)
 
     client = anthropic.Anthropic()
     database_url = os.environ["DATABASE_URL"]
