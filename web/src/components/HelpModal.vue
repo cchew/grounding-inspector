@@ -2,15 +2,25 @@
 import { computed } from "vue";
 import type { Fixture, Label } from "../types";
 
-const props = defineProps<{ fixture: Fixture; open: boolean }>();
+// `fixture` is optional: the Help button is available on the default upload
+// landing view, before any check has run and before any fixture is loaded.
+const props = defineProps<{ fixture?: Fixture | null; open: boolean }>();
 defineEmits<{ close: [] }>();
 
 function exampleFor(label: Label) {
-  return props.fixture.claims.find((c) => c.label === label) ?? null;
+  return props.fixture?.claims.find((c) => c.label === label) ?? null;
 }
 const groundedExample = computed(() => exampleFor("grounded"));
 const partialExample = computed(() => exampleFor("partial"));
 const unsupportedExample = computed(() => exampleFor("unsupported"));
+
+// A live check runs the Claude verifier, which has no committed
+// recall/kappa measurement -- every published figure validates
+// MiniCheck on the sample fixtures instead. Showing the MiniCheck
+// comparison table alongside a live result would contradict the
+// live_disclosure text a few lines below it in this same modal.
+const isLiveResult = computed(() => Boolean(props.fixture?.live_disclosure));
+const showFixtureStats = computed(() => Boolean(props.fixture) && !isLiveResult.value);
 </script>
 
 <template>
@@ -55,7 +65,7 @@ const unsupportedExample = computed(() => exampleFor("unsupported"));
         <p>Each claim is weighted: grounded = 1 point, partial = 0.5 points, unsupported = 0 points. The score is the average across all claims in the output, out of 100.</p>
       </section>
 
-      <section class="modal-section">
+      <section class="modal-section" v-if="showFixtureStats">
         <h2>Verifier comparison</h2>
         <table class="verifier-table" data-testid="verifier-table">
           <thead><tr><th>Mode</th><th>Cost</th><th>Recall</th><th>Agreement (κ)</th></tr></thead>
@@ -81,9 +91,12 @@ const unsupportedExample = computed(() => exampleFor("unsupported"));
         <h2>Known limitations</h2>
         <ul>
           <li><strong>Document length.</strong> This tool checks every claim against the entire document rather than retrieving relevant sections first, so it doesn't miss evidence a retrieval step might filter out — but cost and latency grow with document length. Validated on short-to-medium documents; very long documents (100+ pages) would need a retrieval pre-filter, not yet built.</li>
-          <li v-if="!fixture.live_disclosure"><strong>Domain.</strong> The recall/agreement numbers above are measured on RAGTruth, a general summarisation benchmark — not on insurance, legal, or regulatory text. The travel-insurance fixtures shown here are illustrative, not a validated domain.</li>
-          <li v-else><strong>This check.</strong> {{ fixture.live_disclosure }}</li>
-          <li><strong>Numbers.</strong> A deterministic check flags when a claim states a figure that doesn't appear anywhere in its matched evidence. This runs alongside the main verifier for the fixtures shown here; it is not part of the RAGTruth-validated pipeline above.</li>
+          <li v-if="isLiveResult" data-testid="live-disclosure"><strong>This check.</strong> {{ fixture?.live_disclosure }}</li>
+          <li v-else-if="showFixtureStats" data-testid="domain-note"><strong>Domain.</strong> The recall/agreement numbers above are measured on RAGTruth, a general summarisation benchmark — not on insurance, legal, or regulatory text. The travel-insurance fixtures shown here are illustrative, not a validated domain.</li>
+          <li v-else><strong>Accuracy validation.</strong> Published recall and agreement figures cover the MiniCheck verifier used for the sample fixtures. Checks you run on your own document use a Claude verifier that has no independent accuracy validation yet — treat its results as a research signal, not a certified score.</li>
+          <!-- The trailing clause points at the verifier table, which only
+               renders for a browsed fixture — so it goes with it. -->
+          <li><strong>Numbers.</strong> A deterministic check flags when a claim states a figure that doesn't appear anywhere in its matched evidence.<template v-if="showFixtureStats"> This runs alongside the main verifier for the fixtures shown here; it is not part of the RAGTruth-validated pipeline above.</template></li>
           <li><strong>Omissions (EmbedKDECheck).</strong> A separate signal flags source sections whose content looks semantically absent from the AI output, relative to the rest of the same document. It is unvalidated: no ground-truth omission labels exist for these fixtures and its hyperparameters are unadjusted defaults. Because it's self-relative, a document with only a few sections may flag nothing no matter what was left out.</li>
           <li><strong>Omissions (comprehensiveness QA).</strong> A second, independent signal asks a closed factual question per source subclaim and judges whether the AI output answers it. Unlike EmbedKDECheck, it uses an absolute per-item gate, not a self-relative threshold — so it tends to flag <em>more</em>, not fewer, sections on documents where the AI output is a short summary of a longer source. A high flag rate here often reflects that summaries legitimately omit most source facts by construction, not a detector fault. It is also unvalidated: no ground-truth omission labels exist for these fixtures.</li>
           <li><strong>Fixture provenance.</strong> The AI-generated text in the three synthetic fixtures was produced from a documented prompt (see the repository README); the two real fixtures use unmodified excerpts from published PDS documents.</li>

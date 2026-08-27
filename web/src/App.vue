@@ -81,7 +81,12 @@ function label(id: string): string {
         <div class="title-row">
           <h1>Grounding Inspector</h1>
           <button data-testid="help-button" class="help-btn" @click="helpOpen = true" aria-label="How this works">?</button>
-          <button type="button" class="tour-btn" @click="startTour">Take the tour</button>
+          <!-- Browse mode only: every tour step targets a selector that
+               exists in the fixture browser (.fixture-nav, .pane-claims,
+               .pane-source, .omissions-panel) and none of them are on the
+               upload landing view, so offering it there just highlights
+               nothing. -->
+          <button v-if="mode === 'browse'" type="button" class="tour-btn" @click="startTour">Take the tour</button>
         </div>
         <p class="subtitle">Scoring whether AI claims are backed by document evidence</p>
       </div>
@@ -109,9 +114,12 @@ function label(id: string): string {
       <span class="disclaimer-text">Not an official service. A demonstration tool for checking whether AI-generated claims are backed by a source document.</span>
       <span class="disclaimer-version mono">v{{ appVersion }}</span>
     </footer>
+    <!-- Always mounted: the Help button lives in the header on every view,
+         including the default upload landing view where no result exists
+         yet. HelpModal treats `fixture` as optional and renders a generic
+         explanation when there is nothing to describe. -->
     <HelpModal
-      v-if="mode === 'upload' ? liveResult : fixture"
-      :fixture="(mode === 'upload' ? liveResult : fixture)!"
+      :fixture="mode === 'upload' ? liveResult : fixture"
       :open="helpOpen"
       @close="helpOpen = false"
     />
