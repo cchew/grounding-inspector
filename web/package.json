@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "node scripts/copy-fixtures.mjs && vite",
     "serve": "npm run build && tsx src/server.ts",
-    "build": "node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
+    "build": "npm run typecheck && node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run"
   },
