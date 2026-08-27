@@ -50,11 +50,67 @@ def check_and_increment(conn, quota_key: str, daily_limit: int, today: date | No
     return row is not None
 
 
-def try_acquire_device_lock(conn, device_token: str) -> bool:
-    """Non-blocking Postgres advisory lock keyed by the device token, scoped
-    to this connection -- released automatically when the connection closes.
-    Prevents a burst of concurrent requests from the same device from
-    overlapping; the daily count alone only bounds totals, not concurrency."""
+def decrement(conn, quota_key: str, today: date | None = None) -> None:
+    """Give back one unit of quota, for when a check was counted up front but
+    then failed for a reason the caller didn't cause (pipeline error). Floors
+    at zero so a double-refund can't hand out free checks. Not the inverse of
+    check_and_increment's admission decision -- only ever call it after an
+    increment that this same request actually made."""
+    today = today or date.today()
     with conn.cursor() as cur:
-        cur.execute("SELECT pg_try_advisory_lock(hashtext(%s))", (device_token,))
-        return cur.fetchone()[0]
+        cur.execute(
+            """
+            UPDATE gi_quota
+            SET checks_used = GREATEST(gi_quota.checks_used - 1, 0)
+            WHERE quota_key = %s AND check_date = %s
+            """,
+            (quota_key, today),
+        )
+    conn.commit()
+
+
+LOCK_LEASE_SECONDS = 30
+
+
+def try_acquire_device_lock(conn, device_token: str) -> bool:
+    """Acquire a short-lived lease-based lock keyed by device_token, via a
+    row in gi_device_lock. Connection-pooling-safe by construction (no
+    reliance on Postgres session state), unlike pg_try_advisory_lock --
+    required because the production Neon connection uses PgBouncer
+    transaction-mode pooling, where session-scoped advisory locks are
+    unsupported and can leak onto unrelated backends. The lease expires
+    automatically after LOCK_LEASE_SECONDS, so a crashed or slow request
+    can't hold the lock forever."""
+    with conn.cursor() as cur:
+        cur.execute(
+            # make_interval(secs => %s) rather than the more obvious
+            # interval '%s seconds': psycopg3's default cursor binds
+            # server-side, so a %s inside a quoted SQL string literal is NOT
+            # substituted -- it would reach Postgres as the literal text
+            # "$2 seconds" and fail at parse time.
+            """
+            INSERT INTO gi_device_lock (device_token, locked_until)
+            VALUES (%s, now() + make_interval(secs => %s))
+            ON CONFLICT (device_token) DO UPDATE
+            SET locked_until = EXCLUDED.locked_until
+            WHERE gi_device_lock.locked_until < now()
+            RETURNING device_token
+            """,
+            # float, not int: make_interval's `secs` argument is
+            # double precision, and psycopg adapts a Python int to int2 --
+            # which resolves only via an implicit cast. Sending float8
+            # outright makes it an exact signature match.
+            (device_token, float(LOCK_LEASE_SECONDS)),
+        )
+        row = cur.fetchone()
+    conn.commit()
+    return row is not None
+
+
+def release_device_lock(conn, device_token: str) -> None:
+    """Explicitly release a device lock early (rather than waiting out the
+    full lease) once a request finishes -- keeps sequential legitimate
+    requests from the same device from waiting the full lease window."""
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM gi_device_lock WHERE device_token = %s", (device_token,))
+    conn.commit()
