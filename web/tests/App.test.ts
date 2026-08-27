@@ -84,6 +84,12 @@ describe("layout stability on fixture switch", () => {
     const wrapper = mount(App);
     await flushPromises();
 
+    // App now defaults to the upload view (Task 7) — switch to browse mode
+    // (as a real user would via the "try a sample fixture" link) so the
+    // fixture-switch behaviour under test actually engages.
+    await wrapper.find(".sample-link").trigger("click");
+    await flushPromises();
+
     // First fixture has fully loaded — Inspector is actually rendered.
     expect(wrapper.findComponent(Inspector).exists()).toBe(true);
 
