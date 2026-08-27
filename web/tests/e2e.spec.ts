@@ -99,6 +99,17 @@ async function navigateTo(page: import("@playwright/test").Page, id: FixtureId) 
   await page.waitForSelector(`[data-claim="c1"]`, { timeout: 10000 });
 }
 
+// The app now defaults to the upload/live-check view (Task 7); the fixture
+// browser (.fixture-nav / .fixture-btn / Inspector) only mounts once a user
+// switches to browse mode via the "sample fixture instead" link. Most of
+// this suite's assertions are about browse-mode UI, so route through here
+// instead of a bare page.goto("/").
+async function gotoBrowse(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await page.click(".sample-link");
+  await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+}
+
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
@@ -158,8 +169,7 @@ test.describe("Page shell", () => {
   });
 
   test("all 5 fixture nav buttons are present", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     const buttons = page.locator(".fixture-btn");
     await expect(buttons).toHaveCount(5);
     for (const fx of Object.values(FIXTURES)) {
@@ -168,7 +178,7 @@ test.describe("Page shell", () => {
   });
 
   test("first fixture loads automatically on mount", async ({ page }) => {
-    await page.goto("/");
+    await gotoBrowse(page);
     await page.waitForSelector('[data-testid="output-panel"]', { timeout: 8000 });
     await expect(page.locator('[data-testid="output-panel"]')).toContainText("OUTPUT");
     await expect(page.locator('[data-testid="help-button"]')).toBeVisible();
@@ -180,7 +190,7 @@ test.describe("Page shell", () => {
 // ---------------------------------------------------------------------------
 test.describe("Help modal", () => {
   test("opens on help button click and closes on close button click", async ({ page }) => {
-    await page.goto("/");
+    await gotoBrowse(page);
     await page.waitForSelector('[data-testid="help-button"]', { timeout: 8000 });
     await expect(page.locator('[data-testid="help-modal"]')).not.toBeVisible();
     await page.click('[data-testid="help-button"]');
@@ -190,15 +200,14 @@ test.describe("Help modal", () => {
   });
 
   test("verdict legend shows an example from the active fixture", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "covermore-pds-01");
     await page.click('[data-testid="help-button"]');
     await expect(page.locator('[data-testid="help-modal"]')).toContainText("Cameras are covered for up to $4,000");
   });
 
   test("scope declaration is present", async ({ page }) => {
-    await page.goto("/");
+    await gotoBrowse(page);
     await page.waitForSelector('[data-testid="help-button"]', { timeout: 8000 });
     await page.click('[data-testid="help-button"]');
     await expect(page.locator('[data-testid="scope-declaration"]')).toContainText("have not been verified as false");
@@ -211,8 +220,7 @@ test.describe("Help modal", () => {
 test.describe("Fixture switching", () => {
   for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
     test(`${id}: OUTPUT panel shows correct groundedness counts`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       const outputPanel = page.locator('[data-testid="output-panel"]');
       await expect(outputPanel).toContainText(`${fx.groundedness.grounded} grounded`);
@@ -221,15 +229,13 @@ test.describe("Fixture switching", () => {
     });
 
     test(`${id}: OUTPUT panel shows groundedness score ${fx.score}/100`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       await expect(page.locator('[data-testid="output-panel"]')).toContainText(`${fx.score}/100`);
     });
 
     test(`${id}: help modal shows recall 0.69 when opened`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       await page.click('[data-testid="help-button"]');
       await expect(page.locator('[data-testid="verifier-table"]')).toContainText("0.69");
@@ -244,8 +250,7 @@ test.describe("Fixture switching", () => {
 test.describe("Claim label classes", () => {
   for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
     test(`${id}: each claim has the correct label CSS class`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       for (const c of fx.claims) {
         await expect(
@@ -265,8 +270,7 @@ test.describe("Span linking", () => {
     // Claims with spans: clicking should activate the first span and hide no-span
     for (const c of fx.claims.filter(c => c.spans.length > 0)) {
       test(`${id} ${c.id} (${c.label}): activates span ${c.spans[0]}`, async ({ page }) => {
-        await page.goto("/");
-        await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+        await gotoBrowse(page);
         await navigateTo(page, id);
         await page.waitForSelector(`[data-span="${c.spans[0]}"]`, { timeout: 5000 });
         await page.click(`[data-claim="${c.id}"]`);
@@ -280,8 +284,7 @@ test.describe("Span linking", () => {
     // Claims without spans: clicking shows no-span message
     for (const c of fx.claims.filter(c => c.spans.length === 0)) {
       test(`${id} ${c.id} (unsupported, no span): shows no-span message`, async ({ page }) => {
-        await page.goto("/");
-        await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+        await gotoBrowse(page);
         await navigateTo(page, id);
         await page.click(`[data-claim="${c.id}"]`);
         await expect(page.locator('[data-testid="no-span"]')).toBeVisible();
@@ -290,8 +293,7 @@ test.describe("Span linking", () => {
   }
 
   test("covermore-pds-01 c2: shows evidence note for numeric-mismatch claim", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "covermore-pds-01");
     await page.click('[data-claim="c2"]');
     await expect(page.locator('[data-testid="evidence-note"]')).toBeVisible();
@@ -308,8 +310,7 @@ test.describe("Span linking", () => {
     // so grounded claims showing their rationale too is correct behaviour,
     // not a gap. This test replaces an earlier, incorrect assumption that a
     // grounded claim would have no rationale to show.
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "covermore-pds-01");
     await page.click('[data-claim="c3"]');
     await expect(page.locator('[data-testid="evidence-note"]')).toBeVisible();
@@ -322,7 +323,7 @@ test.describe("Span linking", () => {
 // ---------------------------------------------------------------------------
 test.describe("Design system tokens", () => {
   test("grounded chip has non-transparent background", async ({ page }) => {
-    await page.goto("/");
+    await gotoBrowse(page);
     await page.waitForSelector('[data-testid="output-panel"]', { timeout: 8000 });
     const bg = await page.locator('[data-testid="output-panel"] .label-chip.grounded').evaluate(
       el => getComputedStyle(el).backgroundColor
@@ -333,8 +334,7 @@ test.describe("Design system tokens", () => {
 
   test("partial chip has non-transparent background", async ({ page }) => {
     // Navigate to a fixture with a partial claim
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
     const bg = await page.locator('[data-testid="output-panel"] .label-chip.partial').evaluate(
       el => getComputedStyle(el).backgroundColor
@@ -344,8 +344,7 @@ test.describe("Design system tokens", () => {
   });
 
   test("grounded and partial chips have different background colours", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
     const panel = page.locator('[data-testid="output-panel"]');
     const greenBg = await panel.locator(".label-chip.grounded").evaluate(
@@ -358,8 +357,7 @@ test.describe("Design system tokens", () => {
   });
 
   test("unsupported chip in claim list has non-transparent background", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
     // c1 is unsupported
     const bg = await page.locator('[data-claim="c1"] .label-badge.unsupported').evaluate(
@@ -370,8 +368,7 @@ test.describe("Design system tokens", () => {
   });
 
   test("active span has non-transparent background (accent highlight)", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
     await page.waitForSelector('[data-span="s4_2"]', { timeout: 5000 });
     await page.click('[data-claim="c2"]');
@@ -388,8 +385,7 @@ test.describe("Design system tokens", () => {
 // ---------------------------------------------------------------------------
 test.describe("State reset on fixture switch", () => {
   test("switching fixture deactivates the previously active span", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
 
     // Activate a span on travel-pds-01
     await navigateTo(page, "travel-pds-01");
@@ -403,8 +399,7 @@ test.describe("State reset on fixture switch", () => {
   });
 
   test("active fixture button gets the active class", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "covermore-pds-01");
     await expect(page.getByRole("button", { name: "Cover-More" })).toHaveClass(/active/);
     await expect(page.getByRole("button", { name: "Synthetic 01" })).not.toHaveClass(/active/);
@@ -420,16 +415,14 @@ test.describe("State reset on fixture switch", () => {
 test.describe("Omission panel (post-regeneration)", () => {
   for (const [id, fx] of Object.entries(FIXTURES) as [FixtureId, typeof FIXTURES[FixtureId]][]) {
     test(`${id}: omission caveat discloses unvalidated status`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       const caveats = page.locator('[data-testid^="omission-caveat-"]');
       await expect(caveats.first()).toContainText("unvalidated");
     });
 
     test(`${id}: clicking a flagged section (if any) highlights it in the source doc`, async ({ page }) => {
-      await page.goto("/");
-      await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+      await gotoBrowse(page);
       await navigateTo(page, id);
       const rows = page.locator("[data-omission]");
       const count = await rows.count();
@@ -481,8 +474,7 @@ test.describe("Omission panel (post-regeneration)", () => {
       await route.fulfill({ json: fixture });
     });
 
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
     await expect(page.locator('[data-testid="omission-panel-embedkde"]')).toBeVisible();
     await expect(page.locator('[data-testid="omission-panel-comprehensiveness_qa"]')).toBeVisible();
@@ -523,8 +515,7 @@ test.describe("Omission panel (post-regeneration)", () => {
       await route.fulfill({ json: fixture });
     });
 
-    await page.goto("/");
-    await page.waitForSelector(".fixture-btn", { timeout: 5000 });
+    await gotoBrowse(page);
     await navigateTo(page, "travel-pds-01");
 
     const embedRow = page.locator('[data-testid="omission-panel-embedkde"] [data-omission="s9"]');
