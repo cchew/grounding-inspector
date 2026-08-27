@@ -1,0 +1,127 @@
+<script setup lang="ts">
+import { ref } from "vue";
+import type { Fixture } from "../types";
+import { checkDocument } from "../live-check-api";
+import { track } from "../analytics";
+
+const emit = defineEmits<{ result: [Fixture]; browseSample: [] }>();
+
+const aiOutput = ref("");
+const file = ref<File | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+function onFileChange(e: Event) {
+  const input = e.target as HTMLInputElement;
+  file.value = input.files?.[0] ?? null;
+}
+
+async function submitCheck() {
+  if (!aiOutput.value.trim() || !file.value) {
+    error.value = "Paste the AI output and choose a reference document first.";
+    return;
+  }
+  loading.value = true;
+  error.value = null;
+  try {
+    const fixture = await checkDocument(aiOutput.value, file.value);
+    track("live_check_submitted");
+    emit("result", fixture);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "Check failed. Please try again.";
+  } finally {
+    loading.value = false;
+  }
+}
+</script>
+
+<template>
+  <div class="upload-view">
+    <label class="field-label" for="ai-output-input">AI output to check</label>
+    <textarea
+      id="ai-output-input"
+      data-testid="ai-output-input"
+      v-model="aiOutput"
+      class="ai-output-textarea"
+      placeholder="Paste the AI-generated text you want to check for grounding..."
+      rows="6"
+    ></textarea>
+
+    <label class="field-label" for="reference-file-input">Reference document (PDF, DOCX, or TXT)</label>
+    <input
+      id="reference-file-input"
+      data-testid="reference-file-input"
+      type="file"
+      accept=".pdf,.docx,.txt"
+      @change="onFileChange"
+    />
+
+    <button data-testid="submit-check" class="submit-btn" :disabled="loading" @click="submitCheck">
+      {{ loading ? "Checking..." : "Check grounding" }}
+    </button>
+
+    <p v-if="error" data-testid="upload-error" class="upload-error">{{ error }}</p>
+
+    <button type="button" class="sample-link" @click="$emit('browseSample')">
+      No document handy? Try a sample fixture instead.
+    </button>
+  </div>
+</template>
+
+<style scoped>
+.upload-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--s-5) 0;
+}
+.field-label {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+.ai-output-textarea {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  padding: var(--s-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  resize: vertical;
+}
+.submit-btn {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-bg);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.upload-error {
+  color: var(--chip-unsupported-text);
+  font-size: 0.875rem;
+}
+.sample-link {
+  align-self: flex-start;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--color-ink-2);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+</style>

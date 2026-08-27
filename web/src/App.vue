@@ -3,12 +3,15 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import type { Fixture } from "./types";
 import Inspector from "./components/Inspector.vue";
 import HelpModal from "./components/HelpModal.vue";
+import UploadView from "./components/UploadView.vue";
 import { startTour, hasSeenTour } from "./tour";
 import { track } from "./analytics";
 
+const mode = ref<"upload" | "browse">("upload");
 const fixtureIds = ref<string[]>([]);
 const selectedId = ref<string | null>(null);
 const fixture = ref<Fixture | null>(null);
+const liveResult = ref<Fixture | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
 const helpOpen = ref(false);
@@ -20,11 +23,22 @@ onMounted(async () => {
   try {
     const res = await fetch("/fixtures/index.json");
     fixtureIds.value = await res.json();
-    if (fixtureIds.value.length > 0) selectedId.value = fixtureIds.value[0] ?? null;
   } catch (e) {
     error.value = "Could not load fixture list";
   }
 });
+
+function switchToBrowse() {
+  mode.value = "browse";
+  liveResult.value = null;
+  if (!selectedId.value && fixtureIds.value.length > 0) {
+    selectedId.value = fixtureIds.value[0] ?? null;
+  }
+}
+
+function onLiveResult(result: Fixture) {
+  liveResult.value = result;
+}
 
 watch(selectedId, async (id) => {
   if (!id) return;
@@ -71,7 +85,7 @@ function label(id: string): string {
         </div>
         <p class="subtitle">Scoring whether AI claims are backed by document evidence</p>
       </div>
-      <nav class="fixture-nav" v-if="fixtureIds.length">
+      <nav class="fixture-nav" v-if="mode === 'browse' && fixtureIds.length">
         <button
           v-for="id in fixtureIds"
           :key="id"
@@ -81,15 +95,26 @@ function label(id: string): string {
       </nav>
     </header>
     <main>
-      <Inspector v-if="fixture" :fixture="fixture" />
-      <p v-else-if="error" class="load-error">{{ error }}</p>
-      <p v-else-if="loading" class="loading">Loading...</p>
+      <UploadView
+        v-if="mode === 'upload' && !liveResult"
+        @result="onLiveResult"
+        @browse-sample="switchToBrowse"
+      />
+      <Inspector v-else-if="mode === 'upload' && liveResult" :fixture="liveResult" />
+      <Inspector v-else-if="mode === 'browse' && fixture" :fixture="fixture" />
+      <p v-else-if="mode === 'browse' && error" class="load-error">{{ error }}</p>
+      <p v-else-if="mode === 'browse' && loading" class="loading">Loading...</p>
     </main>
     <footer data-testid="disclaimer" class="disclaimer">
       <span class="disclaimer-text">Not an official service. A demonstration tool for checking whether AI-generated claims are backed by a source document.</span>
       <span class="disclaimer-version mono">v{{ appVersion }}</span>
     </footer>
-    <HelpModal v-if="fixture" :fixture="fixture" :open="helpOpen" @close="helpOpen = false" />
+    <HelpModal
+      v-if="mode === 'upload' ? liveResult : fixture"
+      :fixture="(mode === 'upload' ? liveResult : fixture)!"
+      :open="helpOpen"
+      @close="helpOpen = false"
+    />
   </div>
 </template>
 
