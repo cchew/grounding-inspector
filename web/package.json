@@ -12,6 +12,7 @@
     "dev": "node scripts/copy-fixtures.mjs && vite",
     "serve": "npm run build && tsx src/server.ts",
     "build": "node scripts/copy-fixtures.mjs && node_modules/.bin/vite build",
+    "typecheck": "vue-tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@types/node": "^22.20.1",
     "@vitejs/plugin-vue": "^5.1.0",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^15.0.0",

@@ -79,7 +79,7 @@ describe("OmissionPanel via Inspector", () => {
 const fixtureWithBothOmissionMethods: Fixture = {
   ...fixture,
   omissions: [
-    fixtureWithOmissions.omissions![0],
+    fixtureWithOmissions.omissions![0]!,
     {
       method: "comprehensiveness_qa",
       global_score: 0.5,

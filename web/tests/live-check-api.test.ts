@@ -30,10 +30,10 @@ describe("checkDocument", () => {
     const result = await checkDocument("Medical is covered up to $10,000.", makeFile("Medical..."));
 
     expect(result.fixture_id).toBe("live-check");
-    expect(result.claims[0].label).toBe("grounded");
+    expect(result.claims[0]!.label).toBe("grounded");
     expect(result.live_disclosure).toContain("claude-haiku-4-5-20251001");
 
-    const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(init.method).toBe("POST");
     expect(init.credentials).toBe("include");
     expect(init.body).toBeInstanceOf(FormData);
