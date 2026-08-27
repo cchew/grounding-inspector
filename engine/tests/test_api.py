@@ -4,16 +4,30 @@ from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
-from grounding.api import FREE_TIER_DAILY_LIMIT, IP_DAILY_BACKSTOP, MAX_AI_OUTPUT_CHARS, MAX_UPLOAD_BYTES, create_app
+from grounding.api import (
+    FREE_TIER_DAILY_LIMIT,
+    IP_DAILY_BACKSTOP,
+    MAX_AI_OUTPUT_CHARS,
+    MAX_UPLOAD_BYTES,
+    UNREADABLE_DOCUMENT_DETAIL as api_UNREADABLE_DETAIL,
+    create_app,
+)
 from grounding.quota import mint_device_token
 
 SECRET = b"test-secret"
 
 
 class FakeCursor:
-    def __init__(self, store, held_locks):
+    """Stands in for the four statements grounding.quota issues. Matched on
+    the table name plus the statement verb rather than on any single
+    Postgres-specific function, so the lease-lock rewrite (which replaced
+    pg_try_advisory_lock with an INSERT .. ON CONFLICT on gi_device_lock)
+    doesn't silently stop being exercised."""
+
+    def __init__(self, store, held_locks, released_locks):
         self.store = store
         self.held_locks = held_locks
+        self.released_locks = released_locks
         self._last = None
 
     def __enter__(self):
@@ -23,14 +37,20 @@ class FakeCursor:
         return False
 
     def execute(self, sql, params):
-        if "pg_try_advisory_lock" in sql:
+        if "INSERT INTO gi_device_lock" in sql:
             key = params[0]
             if self.store["locks"].get(key):
-                self._last = (False,)
+                self._last = None  # lease still held by another request
             else:
                 self.store["locks"][key] = True
                 self.held_locks.add(key)
-                self._last = (True,)
+                self._last = (key,)
+        elif "DELETE FROM gi_device_lock" in sql:
+            key = params[0]
+            self.store["locks"].pop(key, None)
+            self.held_locks.discard(key)
+            self.released_locks.append(key)
+            self._last = None
         elif "INSERT INTO gi_quota" in sql:
             quota_key, check_date, limit = params
             used = self.store["quota"].get((quota_key, check_date), 0)
@@ -39,6 +59,12 @@ class FakeCursor:
                 self._last = (used + 1,)
             else:
                 self._last = None
+        elif "UPDATE gi_quota" in sql:
+            quota_key, check_date = params
+            used = self.store["quota"].get((quota_key, check_date))
+            if used is not None:
+                self.store["quota"][(quota_key, check_date)] = max(used - 1, 0)
+            self._last = None
 
     def fetchone(self):
         return self._last
@@ -48,16 +74,19 @@ class FakeConn:
     def __init__(self, store):
         self.store = store
         self.held_locks = set()
+        self.released_locks = store.setdefault("released_locks", [])
 
     def cursor(self):
-        return FakeCursor(self.store, self.held_locks)
+        return FakeCursor(self.store, self.held_locks, self.released_locks)
 
     def commit(self):
         pass
 
     def close(self):
-        for key in self.held_locks:
-            self.store["locks"].pop(key, None)
+        # The real lease row survives a connection close (that's the whole
+        # point of I10's rewrite) -- only an explicit release, or lease
+        # expiry, frees it. Closing must therefore free nothing here.
+        pass
 
 
 def _make_client(anthropic_client=None, quota_store=None):
@@ -85,6 +114,27 @@ def test_check_rejects_oversized_file():
     big_file = {"reference_file": ("policy.txt", io.BytesIO(b"x" * (MAX_UPLOAD_BYTES + 1)), "text/plain")}
     response = client.post("/check", data={"ai_output": "some claim"}, files=big_file)
     assert response.status_code == 400
+    assert "10MB" in response.json()["detail"]
+
+
+def test_check_rejects_oversized_body_from_content_length_before_parsing(monkeypatch):
+    # The Content-Length guard runs as middleware, i.e. before FastAPI's
+    # multipart parser touches the body -- so the endpoint must never be
+    # entered at all for an over-cap request.
+    import grounding.api as api_mod
+
+    def must_not_run(*a, **k):
+        raise AssertionError("endpoint body ran despite an over-cap Content-Length")
+
+    monkeypatch.setattr(api_mod, "extract_reference_document", must_not_run)
+    client, _ = _make_client()
+    response = client.post(
+        "/check",
+        content=b"x" * (MAX_UPLOAD_BYTES + 1),
+        headers={"content-type": "multipart/form-data; boundary=zzz"},
+    )
+    assert response.status_code == 400
+    assert "10MB" in response.json()["detail"]
 
 
 def test_check_rejects_unsupported_file_type():
@@ -162,3 +212,82 @@ def test_check_success_returns_claims_and_groundedness(monkeypatch):
     response = client.post("/check", data={"ai_output": "x"}, files=_files())
     assert response.status_code == 200
     assert response.json() == fake_result
+
+
+def test_device_token_cookie_is_samesite_none(monkeypatch):
+    # netlify.app -> modal.run is cross-site, so a Lax cookie is never sent
+    # back on the frontend's fetch() and the per-device quota never binds.
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    client, _ = _make_client()
+    response = client.post("/check", data={"ai_output": "x"}, files=_files())
+    set_cookie = response.headers["set-cookie"].lower()
+    assert "samesite=none" in set_cookie
+    assert "secure" in set_cookie
+
+
+def test_unreadable_document_returns_generic_400_with_cookie():
+    # pypdf raises PdfReadError, which is not a ValueError -- it used to
+    # escape as an unhandled 500 that also dropped the Set-Cookie header.
+    client, _ = _make_client()
+    files = {"reference_file": ("policy.pdf", io.BytesIO(b"not a real pdf at all"), "application/pdf")}
+    response = client.post("/check", data={"ai_output": "x"}, files=files)
+    assert response.status_code == 400
+    assert response.json()["detail"] == api_UNREADABLE_DETAIL
+    assert "gi_device_token" in response.cookies
+
+
+def test_pipeline_failure_refunds_the_device_quota(monkeypatch):
+    import grounding.api as api_mod
+
+    def failing_check(*a, **k):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(api_mod, "run_live_check", failing_check)
+    client, store = _make_client()
+    token = mint_device_token(SECRET)
+    client.cookies.set("gi_device_token", token)
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 502
+    assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
+
+
+def test_ip_backstop_rejection_does_not_burn_device_quota(monkeypatch):
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    store = {"quota": {("ip:testclient", date.today()): IP_DAILY_BACKSTOP}, "locks": {}}
+    client, _ = _make_client(quota_store=store)
+    token = mint_device_token(SECRET)
+    client.cookies.set("gi_device_token", token)
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 429
+    assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
+
+
+def test_device_lock_is_released_when_the_request_finishes(monkeypatch):
+    # The lease row outlives the connection, so without an explicit release
+    # the next legitimate check from the same device waits out the lease.
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    client, store = _make_client()
+    token = mint_device_token(SECRET)
+    client.cookies.set("gi_device_token", token)
+    assert client.post("/check", data={"ai_output": "x"}, files=_files()).status_code == 200
+    assert store["locks"] == {}
+    assert store["released_locks"] == [token]
+    # ...and a second, sequential check is admitted rather than 429ing.
+    assert client.post("/check", data={"ai_output": "x"}, files=_files()).status_code == 200
+
+
+def test_device_lock_blocks_a_concurrent_check_for_the_same_device(monkeypatch):
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    token = mint_device_token(SECRET)
+    store = {"quota": {}, "locks": {token: True}}  # a check is already in flight
+    client, _ = _make_client(quota_store=store)
+    client.cookies.set("gi_device_token", token)
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 429
+    assert "already running" in r.json()["detail"]
+    # The in-flight request's lease must survive the blocked request's finally.
+    assert store["locks"] == {token: True}
