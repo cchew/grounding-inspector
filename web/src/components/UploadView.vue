@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import type { Fixture } from "../types";
 import { checkDocument } from "../live-check-api";
 import { track } from "../analytics";
@@ -10,6 +10,10 @@ const aiOutput = ref("");
 const file = ref<File | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const elapsed = ref(0);
+let progressTimer: ReturnType<typeof setInterval> | undefined;
+
+onUnmounted(() => clearInterval(progressTimer));
 
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -23,6 +27,8 @@ async function submitCheck() {
   }
   loading.value = true;
   error.value = null;
+  elapsed.value = 0;
+  progressTimer = setInterval(() => { elapsed.value += 1; }, 1000);
   try {
     const fixture = await checkDocument(aiOutput.value, file.value);
     track("live_check_submitted");
@@ -31,6 +37,7 @@ async function submitCheck() {
     error.value = e instanceof Error ? e.message : "Check failed. Please try again.";
   } finally {
     loading.value = false;
+    clearInterval(progressTimer);
   }
 }
 </script>
@@ -59,6 +66,11 @@ async function submitCheck() {
     <button data-testid="submit-check" class="submit-btn" :disabled="loading" @click="submitCheck">
       {{ loading ? "Checking..." : "Check grounding" }}
     </button>
+
+    <div v-if="loading" data-testid="check-progress" class="check-progress">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>Checks can take up to a minute on long documents. ({{ elapsed }}s)</span>
+    </div>
 
     <p v-if="error" data-testid="upload-error" class="upload-error">{{ error }}</p>
 
@@ -109,6 +121,24 @@ async function submitCheck() {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.check-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 0.75rem;
+  color: var(--color-ink-3);
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-ink-3);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
 .upload-error {
   color: var(--chip-unsupported-text);
   font-size: 0.875rem;

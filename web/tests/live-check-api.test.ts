@@ -58,4 +58,22 @@ describe("checkDocument", () => {
 
     await expect(checkDocument("x", makeFile("y"))).rejects.toThrow("HTTP 500");
   });
+
+  it("aborts with a friendly message when the check exceeds the timeout", async () => {
+    vi.useFakeTimers();
+    global.fetch = vi.fn((_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        (init!.signal as AbortSignal).addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+    ) as unknown as typeof fetch;
+
+    const assertion = expect(checkDocument("x", makeFile("y"))).rejects.toThrow(
+      "taking longer than expected",
+    );
+    await vi.advanceTimersByTimeAsync(90_000);
+    await assertion;
+    vi.useRealTimers();
+  });
 });

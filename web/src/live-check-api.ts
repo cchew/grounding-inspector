@@ -2,12 +2,35 @@ import type { Fixture, LiveCheckApiResponse } from "./types";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? "http://127.0.0.1:8000";
 
+const CHECK_TIMEOUT_MS = 90_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      throw new Error(
+        "The check is taking longer than expected. Try a shorter passage or a smaller document.",
+      );
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function checkDocument(aiOutput: string, file: File): Promise<Fixture> {
   const form = new FormData();
   form.append("ai_output", aiOutput);
   form.append("reference_file", file);
 
-  const res = await fetch(`${API_BASE}/check`, { method: "POST", body: form, credentials: "include" });
+  const res = await fetchWithTimeout(`${API_BASE}/check`, {
+    method: "POST",
+    body: form,
+    credentials: "include",
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.detail ?? `HTTP ${res.status}`);

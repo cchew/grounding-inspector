@@ -64,6 +64,32 @@ describe("UploadView", () => {
     expect(wrapper.find('[data-testid="upload-error"]').text()).toContain("free checks are used up");
   });
 
+  it("shows a progress indicator with elapsed seconds while a check runs", async () => {
+    vi.useFakeTimers();
+    let resolve!: (v: unknown) => void;
+    (checkDocument as ReturnType<typeof vi.fn>).mockReturnValue(
+      new Promise((r) => { resolve = r; }),
+    );
+
+    const wrapper = mount(UploadView);
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("Some AI claim.");
+    await selectFile(wrapper);
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="check-progress"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="check-progress"]').text()).toContain("up to a minute");
+
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(wrapper.find('[data-testid="check-progress"]').text()).toContain("2s");
+
+    resolve({
+      fixture_id: "live-check", source: { title: "t", sections: [] }, ai_output: "",
+      claims: [], groundedness: { score: 0, n_grounded: 0, n_partial: 0, n_unsupported: 0 },
+    });
+    await flushPromises();
+    vi.useRealTimers();
+  });
+
   it("emits browseSample when the sample link is clicked", async () => {
     const wrapper = mount(UploadView);
     await wrapper.find(".sample-link").trigger("click");
