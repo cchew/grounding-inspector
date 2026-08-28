@@ -94,3 +94,44 @@ test("live check: the guided tour is only offered in browse mode", async ({ page
   await page.getByText("No document handy? Try a sample fixture instead.").click();
   await expect(page.locator(".tour-btn")).toBeVisible();
 });
+
+test("live check: the sample view has a way back to document upload", async ({ page }) => {
+  // Entering browse mode auto-starts the driver.js tour on first fixture load;
+  // its full-page SVG overlay intercepts the nav click. Suppress it, matching
+  // the "guided tour is only offered in browse mode" spec above.
+  await page.addInitScript(() => localStorage.setItem("gi-tour-seen", "1"));
+  await page.goto("/");
+  await page.getByText("No document handy? Try a sample fixture instead.").click();
+  await expect(page.locator(".fixture-nav")).toBeVisible();
+
+  await page.getByTestId("nav-check").click();
+  await expect(page.getByTestId("ai-output-input")).toBeVisible();
+});
+
+test("live check: 'Check a document' clears a live result and returns a fresh form", async ({ page }) => {
+  await page.route("**/check", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ai_output: "Medical is covered up to $10,000.",
+        source: { sections: [{ id: "s1", page: 1, char_start: 0, char_end: 40, text: "Medical expenses covered up to $10,000." }] },
+        claims: [{ id: "c1", text: "Medical is covered up to $10,000.", label: "grounded", evidence_span_ids: ["s1"], quote: "Medical expenses", page: 1, rationale: "" }],
+        groundedness: { score: 100, n_grounded: 1, n_partial: 0, n_unsupported: 0 },
+        verifier_model: "claude-haiku-4-5-20251001",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByTestId("ai-output-input").fill("Medical is covered up to $10,000.");
+  await page.getByTestId("reference-file-input").setInputFiles({
+    name: "policy.txt", mimeType: "text/plain", buffer: Buffer.from("Medical expenses covered up to $10,000."),
+  });
+  await page.getByTestId("submit-check").click();
+  await expect(page.getByTestId("output-panel")).toBeVisible();
+
+  await page.getByTestId("nav-check").click();
+  await expect(page.getByTestId("ai-output-input")).toBeVisible();
+  await expect(page.getByTestId("output-panel")).toHaveCount(0);
+});

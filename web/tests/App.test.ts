@@ -149,3 +149,47 @@ describe("layout stability on fixture switch", () => {
     await flushPromises();
   });
 });
+
+describe("view navigation", () => {
+  const fetchWithFixtures = () =>
+    vi.fn((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            url === "/fixtures/index.json" ? ["fixture-a"] : minimalFixture("fixture-a"),
+          ),
+      } as Response),
+    ) as unknown as typeof fetch;
+
+  it("offers a way back to the upload view from browse mode", async () => {
+    global.fetch = fetchWithFixtures();
+    const wrapper = mount(App);
+    await flushPromises();
+
+    await wrapper.find(".sample-link").trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".fixture-nav").exists()).toBe(true);
+
+    await wrapper.find('[data-testid="nav-check"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-testid="ai-output-input"]').exists()).toBe(true);
+    expect(wrapper.find(".fixture-nav").exists()).toBe(false);
+  });
+
+  it("keeps the typed AI output across a trip to browse and back", async () => {
+    global.fetch = fetchWithFixtures();
+    const wrapper = mount(App);
+    await flushPromises();
+
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("my draft claim");
+    await wrapper.find('[data-testid="nav-browse"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-testid="nav-check"]').trigger("click");
+    await flushPromises();
+
+    expect((wrapper.find('[data-testid="ai-output-input"]').element as HTMLTextAreaElement).value).toBe(
+      "my draft claim",
+    );
+  });
+});

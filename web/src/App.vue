@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import type { Fixture } from "./types";
 import Inspector from "./components/Inspector.vue";
 import HelpModal from "./components/HelpModal.vue";
@@ -17,6 +17,13 @@ const loading = ref(false);
 const helpOpen = ref(false);
 const appVersion = __APP_VERSION__;
 let tourFired = false;
+
+const showUpload = computed(() => mode.value === "upload" && !liveResult.value);
+
+function switchToUpload() {
+  mode.value = "upload";
+  liveResult.value = null;
+}
 
 onMounted(async () => {
   track("gate_pass");
@@ -89,6 +96,24 @@ function label(id: string): string {
           <button v-if="mode === 'browse'" type="button" class="tour-btn" @click="startTour">Take the tour</button>
         </div>
         <p class="subtitle">Scoring whether AI claims are backed by document evidence</p>
+        <nav class="view-nav" aria-label="View">
+          <button
+            type="button"
+            data-testid="nav-check"
+            class="view-nav-btn"
+            :class="{ active: mode === 'upload' }"
+            :disabled="showUpload"
+            @click="switchToUpload"
+          >Check a document</button>
+          <button
+            type="button"
+            data-testid="nav-browse"
+            class="view-nav-btn"
+            :class="{ active: mode === 'browse' }"
+            :disabled="mode === 'browse'"
+            @click="switchToBrowse"
+          >Browse samples</button>
+        </nav>
       </div>
       <nav class="fixture-nav" v-if="mode === 'browse' && fixtureIds.length">
         <button
@@ -100,12 +125,14 @@ function label(id: string): string {
       </nav>
     </header>
     <main>
-      <UploadView
-        v-if="mode === 'upload' && !liveResult"
-        @result="onLiveResult"
-        @browse-sample="switchToBrowse"
-      />
-      <Inspector v-else-if="mode === 'upload' && liveResult" :fixture="liveResult" />
+      <KeepAlive>
+        <UploadView
+          v-if="showUpload"
+          @result="onLiveResult"
+          @browse-sample="switchToBrowse"
+        />
+      </KeepAlive>
+      <Inspector v-if="mode === 'upload' && liveResult" :fixture="liveResult" />
       <Inspector v-else-if="mode === 'browse' && fixture" :fixture="fixture" />
       <p v-else-if="mode === 'browse' && error" class="load-error">{{ error }}</p>
       <p v-else-if="mode === 'browse' && loading" class="loading">Loading...</p>
@@ -190,6 +217,37 @@ function label(id: string): string {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-bg);
+}
+
+.view-nav {
+  display: flex;
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+}
+
+.view-nav-btn {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: all 0.12s var(--ease-spring);
+}
+
+.view-nav-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-ink-3);
+}
+
+.view-nav-btn.active {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-bg);
+  cursor: default;
 }
 
 .help-btn {
