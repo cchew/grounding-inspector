@@ -9,14 +9,14 @@ REPO_ROOT = Path(__file__).resolve().parent  # engine/
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install(
-        "fastapi>=0.115",
-        "python-multipart>=0.0.9",
+        "fastapi==0.139.2",
+        "python-multipart==0.0.32",
         "anthropic>=0.30.0",
-        "pypdf>=5.0",
-        "python-docx>=1.1",
-        "psycopg[binary]>=3.2",
+        "pypdf==6.16.2",
+        "python-docx==1.2.0",
+        "psycopg[binary]==3.3.4",
         "scipy==1.13.1",
-        "prov>=3.1,<4",
+        "prov==3.1.0",
     )
     .add_local_python_source("grounding")
 )
