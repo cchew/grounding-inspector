@@ -137,3 +137,20 @@ def test_real_api_verify_resists_verdict_flipping_injection():
     )
     subclaim = "dental treatment is fully covered with no limit"
     assert verify_subclaim_claude(subclaim, [document], client) is False
+
+
+def test_every_live_prompt_wrapper_tag_is_covered_by_tag_break():
+    import inspect
+    import re as _re
+
+    from grounding import decompose, verify
+    from grounding.prompt_safety import _TAG_BREAK
+
+    covered = set(_re.search(r"\(([^)]+)\)", _TAG_BREAK.pattern).group(1).split("|"))
+
+    used: set[str] = set()
+    for fn in (decompose._wrap, verify.verify_subclaim_claude):
+        used.update(_re.findall(r"<([a-z_]+)>", inspect.getsource(fn)))
+
+    assert used, "expected to find wrapper tags in the prompt builders"
+    assert used <= covered, f"wrapper tags not neutralised by _TAG_BREAK: {sorted(used - covered)}"
