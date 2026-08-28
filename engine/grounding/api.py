@@ -50,7 +50,10 @@ ALLOWED_ORIGINS = [
 
 
 def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
-    app = FastAPI(title="grounding-inspector-live", version="0.1.0")
+    app = FastAPI(
+        title="grounding-inspector-live", version="0.1.0",
+        docs_url=None, redoc_url=None, openapi_url=None,
+    )
 
     @app.middleware("http")
     async def reject_oversized_body(request: Request, call_next):

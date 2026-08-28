@@ -291,3 +291,10 @@ def test_device_lock_blocks_a_concurrent_check_for_the_same_device(monkeypatch):
     assert "already running" in r.json()["detail"]
     # The in-flight request's lease must survive the blocked request's finally.
     assert store["locks"] == {token: True}
+
+
+def test_interactive_docs_are_disabled():
+    client, _ = _make_client()
+    assert client.get("/docs").status_code == 404
+    assert client.get("/redoc").status_code == 404
+    assert client.get("/openapi.json").status_code == 404
