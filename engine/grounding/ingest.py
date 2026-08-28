@@ -5,6 +5,9 @@ from pypdf import PdfReader
 
 MAX_EXTRACTED_CHARS = 60_000
 
+_PDF_MAGIC = b"%PDF-"
+_ZIP_MAGIC = b"PK\x03\x04"
+
 
 class UnsupportedFileType(ValueError):
     pass
@@ -44,13 +47,30 @@ def extract_plain_text(text: str) -> list[dict]:
     return [{"id": "s1", "page": 1, "char_start": 0, "char_end": len(text), "text": text}]
 
 
+def _looks_like_text(raw: bytes) -> bool:
+    """A .txt upload is accepted only if it decodes as UTF-8 with few
+    replacement characters — a heuristic guard against a binary blob
+    renamed to .txt padding out an expensive check."""
+    if not raw:
+        return False
+    decoded = raw.decode("utf-8", errors="replace")
+    bad = decoded.count("�")
+    return bad / len(decoded) <= 0.10
+
+
 def extract_reference_document(filename: str, file_bytes: bytes) -> list[dict]:
     lower = filename.lower()
     if lower.endswith(".pdf"):
+        if not file_bytes.startswith(_PDF_MAGIC):
+            raise UnsupportedFileType(f"{filename} is not a PDF (bad file signature)")
         sections = extract_pdf(file_bytes)
     elif lower.endswith(".docx"):
+        if not file_bytes.startswith(_ZIP_MAGIC):
+            raise UnsupportedFileType(f"{filename} is not a DOCX (bad file signature)")
         sections = extract_docx(file_bytes)
     elif lower.endswith(".txt"):
+        if not _looks_like_text(file_bytes):
+            raise UnsupportedFileType(f"{filename} does not look like UTF-8 text")
         sections = extract_plain_text(file_bytes.decode("utf-8", errors="replace"))
     else:
         raise UnsupportedFileType(f"unsupported file type: {filename}")

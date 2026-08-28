@@ -82,17 +82,47 @@ def test_extract_plain_text_empty_returns_no_sections():
     assert extract_plain_text("   ") == []
 
 
+def test_reference_document_rejects_pdf_extension_with_non_pdf_bytes():
+    with pytest.raises(UnsupportedFileType):
+        extract_reference_document("policy.pdf", b"this is definitely not a pdf")
+
+
+def test_reference_document_rejects_docx_extension_with_non_zip_bytes():
+    with pytest.raises(UnsupportedFileType):
+        extract_reference_document("policy.docx", b"plain text, not a zip container")
+
+
+def test_reference_document_rejects_txt_that_is_mostly_binary():
+    blob = bytes(range(256)) * 8  # ~66% non-decodable as utf-8 text
+    with pytest.raises(UnsupportedFileType):
+        extract_reference_document("notes.txt", blob)
+
+
+def test_reference_document_accepts_valid_pdf_magic(monkeypatch):
+    import grounding.ingest as ingest_mod
+    monkeypatch.setattr(ingest_mod, "PdfReader", FakePdfReader)
+    sections = extract_reference_document("policy.pdf", b"%PDF-1.4\n" + b"x" * 20)
+    assert sections[0]["id"] == "p1"
+
+
+def test_reference_document_accepts_valid_docx_magic(monkeypatch):
+    import grounding.ingest as ingest_mod
+    monkeypatch.setattr(ingest_mod, "Document", FakeDocxDocument)
+    sections = extract_reference_document("policy.docx", b"PK\x03\x04" + b"x" * 20)
+    assert sections[0]["id"] == "s1"
+
+
 def test_extract_reference_document_dispatches_pdf(monkeypatch):
     import grounding.ingest as ingest_mod
     monkeypatch.setattr(ingest_mod, "PdfReader", FakePdfReader)
-    sections = extract_reference_document("policy.pdf", b"fake")
+    sections = extract_reference_document("policy.pdf", b"%PDF-1.4\nfake")
     assert sections[0]["id"] == "p1"
 
 
 def test_extract_reference_document_dispatches_docx(monkeypatch):
     import grounding.ingest as ingest_mod
     monkeypatch.setattr(ingest_mod, "Document", FakeDocxDocument)
-    sections = extract_reference_document("policy.docx", b"fake")
+    sections = extract_reference_document("policy.docx", b"PK\x03\x04fake")
     assert sections[0]["id"] == "s1"
 
 
@@ -121,4 +151,4 @@ def test_extract_reference_document_rejects_empty_extraction(monkeypatch):
 
     monkeypatch.setattr(ingest_mod, "PdfReader", EmptyReader)
     with pytest.raises(ValueError, match="no extractable text"):
-        extract_reference_document("empty.pdf", b"fake")
+        extract_reference_document("empty.pdf", b"%PDF-1.4\nfake")
