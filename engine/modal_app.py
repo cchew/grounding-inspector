@@ -11,7 +11,7 @@ image = (
     .pip_install(
         "fastapi==0.139.2",
         "python-multipart==0.0.32",
-        "anthropic>=0.30.0",
+        "anthropic==0.109.1",
         "pypdf==6.16.2",
         "python-docx==1.2.0",
         "psycopg[binary]==3.3.4",
