@@ -59,25 +59,29 @@ def _looks_like_text(raw: bytes) -> bool:
 
 
 def extract_reference_document(filename: str, file_bytes: bytes) -> list[dict]:
+    """`filename` is used for extension dispatch only. It is the raw multipart
+    Content-Disposition value -- unbounded and attacker-controlled -- and the
+    API layer logs these exception messages, so none of them interpolate it.
+    The branch already identifies the extension."""
     lower = filename.lower()
     if lower.endswith(".pdf"):
         if not file_bytes.startswith(_PDF_MAGIC):
-            raise UnsupportedFileType(f"{filename} is not a PDF (bad file signature)")
+            raise UnsupportedFileType("upload does not match its .pdf extension (bad file signature)")
         sections = extract_pdf(file_bytes)
     elif lower.endswith(".docx"):
         if not file_bytes.startswith(_ZIP_MAGIC):
-            raise UnsupportedFileType(f"{filename} is not a DOCX (bad file signature)")
+            raise UnsupportedFileType("upload does not match its .docx extension (bad file signature)")
         sections = extract_docx(file_bytes)
     elif lower.endswith(".txt"):
         if not _looks_like_text(file_bytes):
-            raise UnsupportedFileType(f"{filename} does not look like UTF-8 text")
+            raise UnsupportedFileType("upload does not match its .txt extension (not UTF-8 text)")
         sections = extract_plain_text(file_bytes.decode("utf-8", errors="replace"))
     else:
-        raise UnsupportedFileType(f"unsupported file type: {filename}")
+        raise UnsupportedFileType("unsupported file type")
 
     total_chars = sum(len(s["text"]) for s in sections)
     if total_chars > MAX_EXTRACTED_CHARS:
         raise DocumentTooLarge(f"extracted text ({total_chars} chars) exceeds the {MAX_EXTRACTED_CHARS}-char limit")
     if not sections:
-        raise ValueError(f"no extractable text found in {filename}")
+        raise ValueError("no extractable text found in the uploaded document")
     return sections

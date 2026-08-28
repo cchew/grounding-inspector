@@ -65,6 +65,23 @@ def test_pipeline_failure_does_not_log_raw_document_or_ai_text(caplog, monkeypat
     assert "sk-ant-" not in caplog.text
 
 
+def test_extraction_failure_does_not_log_the_uploaded_filename(caplog):
+    # reference_file.filename is the raw multipart Content-Disposition value:
+    # unbounded and attacker-controlled. It must not reach the logs via an
+    # exception message we build ourselves.
+    caplog.set_level(logging.DEBUG)
+    client = _client(MagicMock())
+    client.cookies.set("gi_device_token", mint_device_token(SECRET))
+    r = client.post(
+        "/check", data={"ai_output": "x"},
+        files={"reference_file": ("CANARY_FNAME_zzz.pdf",
+                                  io.BytesIO(b"definitely not a pdf"), "application/pdf")},
+    )
+    assert r.status_code == 400
+    assert "CANARY_FNAME_zzz" not in caplog.text
+    assert "CANARY_FNAME" not in caplog.text
+
+
 def test_decompose_parse_error_message_has_no_model_text():
     from grounding.decompose import decompose_output_claude
 
