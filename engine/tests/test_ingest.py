@@ -1,6 +1,7 @@
 import pytest
 from grounding.ingest import (
     extract_pdf, extract_docx, extract_plain_text, extract_reference_document,
+    _detect_text_encoding,
     DocumentTooLarge, UnsupportedFileType, MAX_EXTRACTED_CHARS,
 )
 
@@ -125,6 +126,23 @@ def test_reference_document_rejects_txt_that_is_mostly_binary():
     blob = bytes(range(256)) * 8  # ~66% non-decodable as utf-8 text
     with pytest.raises(UnsupportedFileType):
         extract_reference_document("notes.txt", blob)
+
+
+def test_detect_text_encoding_plain_ascii():
+    from grounding.ingest import _detect_text_encoding
+    assert _detect_text_encoding(b"Just some ascii text.") == "utf-8"
+
+
+def test_reference_document_accepts_utf16_txt():
+    raw = "Overseas medical cover.\n\nCancellation limit.".encode("utf-16")
+    sections = extract_reference_document("policy.txt", raw)
+    assert [s["text"] for s in sections] == ["Overseas medical cover.", "Cancellation limit."]
+
+
+def test_reference_document_accepts_latin1_txt():
+    raw = "Café closes at noon; résumé required.".encode("latin-1")
+    sections = extract_reference_document("policy.txt", raw)
+    assert sections[0]["text"] == "Café closes at noon; résumé required."
 
 
 def test_reference_document_accepts_valid_pdf_magic(monkeypatch):

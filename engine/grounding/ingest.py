@@ -76,15 +76,35 @@ def extract_plain_text(text: str) -> list[dict]:
     return _sections_from_blocks(re.split(r"\n\s*\n+", text))
 
 
-def _looks_like_text(raw: bytes) -> bool:
-    """A .txt upload is accepted only if it decodes as UTF-8 with few
-    replacement characters — a heuristic guard against a binary blob
-    renamed to .txt padding out an expensive check."""
+_C0C1 = (
+    set(range(0x00, 0x09)) | {0x0B, 0x0C} | set(range(0x0E, 0x20)) | set(range(0x7F, 0xA0))
+)
+
+
+def _detect_text_encoding(raw: bytes) -> str | None:
+    """Encoding a .txt upload decodes cleanly as, else None. Accepts UTF-8,
+    UTF-16 (BOM), and Latin-1; rejects a blob with > 15% C0/C1 control bytes
+    (tab/newline/CR excluded) as binary padding for an expensive check.
+
+    A strict-UTF-8 failure with a low control-byte share is treated as Latin-1
+    before the lossy UTF-8-replace fallback: real Latin-1 prose (French/English
+    accents) sits well under the 10% replacement ratio, so an earlier ratio
+    check would silently mojibake it as UTF-8."""
     if not raw:
-        return False
-    decoded = raw.decode("utf-8", errors="replace")
-    bad = decoded.count("�")
-    return bad / len(decoded) <= 0.10
+        return None
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return "utf-16"
+    try:
+        raw.decode("utf-8")
+        return "utf-8"
+    except UnicodeDecodeError:
+        pass
+    if sum(1 for b in raw if b in _C0C1) / len(raw) <= 0.15:
+        return "latin-1"
+    replaced = raw.decode("utf-8", errors="replace")
+    if replaced.count("�") / len(replaced) <= 0.10:
+        return "utf-8"
+    return None
 
 
 def extract_reference_document(filename: str, file_bytes: bytes) -> list[dict]:
@@ -102,9 +122,10 @@ def extract_reference_document(filename: str, file_bytes: bytes) -> list[dict]:
             raise UnsupportedFileType("upload does not match its .docx extension (bad file signature)")
         sections = extract_docx(file_bytes)
     elif lower.endswith(".txt"):
-        if not _looks_like_text(file_bytes):
-            raise UnsupportedFileType("upload does not match its .txt extension (not UTF-8 text)")
-        sections = extract_plain_text(file_bytes.decode("utf-8", errors="replace"))
+        encoding = _detect_text_encoding(file_bytes)
+        if encoding is None:
+            raise UnsupportedFileType("upload does not match its .txt extension (not text)")
+        sections = extract_plain_text(file_bytes.decode(encoding, errors="replace"))
     else:
         raise UnsupportedFileType("unsupported file type")
 
