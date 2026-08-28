@@ -293,6 +293,35 @@ def test_device_lock_blocks_a_concurrent_check_for_the_same_device(monkeypatch):
     assert store["locks"] == {token: True}
 
 
+def test_check_rejects_a_document_that_fans_out_too_far(monkeypatch):
+    import grounding.api as api_mod
+    from grounding.live import CheckTooComplex
+
+    def too_complex(*a, **k):
+        raise CheckTooComplex("42 claims exceeds the per-check limit")
+
+    monkeypatch.setattr(api_mod, "run_live_check", too_complex)
+    client, _ = _make_client()
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 400
+    assert "internal" not in r.text.lower()
+    assert "exceeds the per-check limit" not in r.text  # no raw exception text
+    assert "gi_device_token" in r.cookies
+
+
+def test_fan_out_rejection_does_not_burn_device_quota(monkeypatch):
+    import grounding.api as api_mod
+    from grounding.live import CheckTooComplex
+
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: (_ for _ in ()).throw(CheckTooComplex("too big")))
+    client, store = _make_client()
+    token = mint_device_token(SECRET)
+    client.cookies.set("gi_device_token", token)
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 400
+    assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
+
+
 def test_interactive_docs_are_disabled():
     client, _ = _make_client()
     assert client.get("/docs").status_code == 404

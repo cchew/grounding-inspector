@@ -1,6 +1,8 @@
 import json
 
-from grounding.live import run_live_check
+import pytest
+
+from grounding.live import CheckTooComplex, MAX_CLAIMS, run_live_check
 
 SECTIONS = [
     {"id": "s1", "page": 1, "char_start": 0, "char_end": 40, "text": "Medical expenses covered up to $10,000."},
@@ -64,3 +66,25 @@ def test_run_live_check_uses_custom_verifier_model():
     result = run_live_check("x", SECTIONS, client, verifier_model="claude-opus-4")
     assert result["verifier_model"] == "claude-opus-4"
     assert client.messages.calls[1]["model"] == "claude-opus-4"
+
+
+def test_run_live_check_rejects_too_many_claims():
+    many = json.dumps([{"claim": f"c{i}", "subclaims": ["s"]} for i in range(MAX_CLAIMS + 1)])
+    client = FakeClient(many, ["SUPPORTED"] * (MAX_CLAIMS + 1))
+    with pytest.raises(CheckTooComplex):
+        run_live_check("x", SECTIONS, client)
+
+
+def test_run_live_check_rejects_too_many_subclaims():
+    # few claims, but a combined subclaim count over the verifier-call cap
+    payload = json.dumps([{"claim": "c", "subclaims": ["s"] * 200}])
+    client = FakeClient(payload, ["SUPPORTED"] * 200)
+    with pytest.raises(CheckTooComplex):
+        run_live_check("x", SECTIONS, client)
+
+
+def test_run_live_check_allows_a_normal_size_check():
+    payload = json.dumps([{"claim": "c", "subclaims": ["s1", "s2"]}])
+    client = FakeClient(payload, ["SUPPORTED", "SUPPORTED"])
+    result = run_live_check("x", SECTIONS, client)
+    assert result["claims"][0]["label"] == "grounded"

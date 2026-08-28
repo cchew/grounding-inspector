@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from grounding.ingest import extract_reference_document
-from grounding.live import run_live_check
+from grounding.live import CheckTooComplex, run_live_check
 from grounding.quota import (
     check_and_increment,
     decrement,
@@ -41,6 +41,13 @@ UPLOAD_TOO_LARGE_DETAIL = f"Reference document exceeds {MAX_UPLOAD_BYTES // (102
 # hidden-context-exposure constraint); the real exception is logged instead.
 UNREADABLE_DOCUMENT_DETAIL = (
     "Could not read the reference document. Upload an unencrypted PDF, DOCX or TXT file with selectable text."
+)
+# Fixed, generic text. A CheckTooComplex carries the offending claim/subclaim
+# counts in its message; that detail must never reach the client, so the
+# handler maps every instance to this one string and logs the real cause.
+CHECK_TOO_COMPLEX_DETAIL = (
+    "This AI output produced too many separate claims to check in one request. "
+    "Try checking a shorter passage."
 )
 
 ALLOWED_ORIGINS = [
@@ -165,6 +172,16 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
 
             try:
                 return run_live_check(ai_output, sections, client)
+            except CheckTooComplex:
+                # A property of the submitted output, not a server fault --
+                # generic 400, and refund the check charged above so a
+                # rejected request doesn't cost the user one of their three.
+                logger.warning("live check rejected: fan-out over cap")
+                try:
+                    decrement(conn, device_key, date.today())
+                except Exception:
+                    logger.exception("device quota refund failed after fan-out rejection")
+                _http_error(400, CHECK_TOO_COMPLEX_DETAIL)
             except Exception:
                 logger.exception("live check pipeline failed")
                 try:
