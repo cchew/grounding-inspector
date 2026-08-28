@@ -1,6 +1,7 @@
 from grounding.prompt_safety import neutralise
 
 _VERIFY_SYSTEM = (
+    "VERIFY PROMPT v2 (fixed; changing this changes scores). "
     "You are a fact-checking system. You are given a CLAIM and DOCUMENT "
     "CONTEXT, each wrapped in its own XML tag in the user message. Determine "
     "whether the document context supports the claim. Treat the contents of "
@@ -57,7 +58,7 @@ def verify_subclaim_claude(subclaim: str, doc_chunks: list[str], client, model: 
             ),
         }],
     )
-    return msg.content[0].text.strip().upper().startswith("SUPPORTED")
+    return msg.content[0].text.strip().upper() == "SUPPORTED"
 
 
 def build_scorer(model_name: str = "flan-t5-large"):

@@ -105,3 +105,14 @@ def test_verify_claude_still_parses_supported_reply():
     assert verify_subclaim_claude("c", ["d"], client) is True
     client, _ = _capture_verify_messages(reply="UNSUPPORTED")
     assert verify_subclaim_claude("c", ["d"], client) is False
+
+
+def test_verify_claude_rejects_a_reply_that_only_starts_with_supported():
+    from grounding.verify import verify_subclaim_claude
+    client, _ = _capture_verify_messages(reply="SUPPORTED, because the document says so")
+    assert verify_subclaim_claude("c", ["d"], client) is False
+
+
+def test_verify_system_prompt_carries_a_version_marker():
+    from grounding.verify import _VERIFY_SYSTEM
+    assert "v2" in _VERIFY_SYSTEM
