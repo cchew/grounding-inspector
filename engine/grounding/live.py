@@ -9,9 +9,17 @@ DEFAULT_VERIFIER_MODEL = "claude-haiku-4-5-20251001"
 # (verify). An adversarially padded ai_output that decomposes into hundreds
 # of subclaims would otherwise turn one free check into hundreds of
 # large-context Claude calls. A real <=3,500-char output rarely exceeds
-# ~30 subclaims; these caps sit well clear of legitimate use.
+# ~30 subclaims; MAX_VERIFIER_CALLS sits ~1.3x above that ceiling.
 MAX_CLAIMS = 50
-MAX_VERIFIER_CALLS = 100
+MAX_VERIFIER_CALLS = 40
+# The call count alone does not bound cost: label_claims passes the whole
+# document (up to ingest.MAX_EXTRACTED_CHARS = 60,000) as context to every
+# verify call, so input tokens scale as document_chars x subclaims. At
+# 60k chars x 40 subclaims that is 2.4M chars ~ 600k input tokens for one
+# free check. This budget caps the product at ~1.2M chars (~300k tokens),
+# which still admits a 60k-char document with 20 subclaims, or a typical
+# 10k-char document with the full 40.
+MAX_CONTEXT_CHAR_BUDGET = 1_200_000
 
 
 class CheckTooComplex(ValueError):
@@ -45,6 +53,10 @@ def run_live_check(
         raise CheckTooComplex(
             f"{len(decomposed)} claims / {total_subclaims} subclaims exceeds "
             f"the per-check limit ({MAX_CLAIMS}/{MAX_VERIFIER_CALLS})"
+        )
+    if len(full_text) * total_subclaims > MAX_CONTEXT_CHAR_BUDGET:
+        raise CheckTooComplex(
+            f"context budget exceeded ({len(full_text)} chars x {total_subclaims} subclaims)"
         )
     verifier_fn = _claude_verifier(client, verifier_model)
     claims = label_claims(decomposed, full_text, sections, verifier_fn, verifier_model=verifier_model)

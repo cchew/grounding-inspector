@@ -83,6 +83,36 @@ def test_run_live_check_rejects_too_many_subclaims():
         run_live_check("x", SECTIONS, client)
 
 
+def test_run_live_check_rejects_a_context_budget_blowout():
+    # Under both count caps (1 claim, 30 subclaims < MAX_VERIFIER_CALLS) but
+    # the document is re-sent as context on every verify call, so
+    # chars x subclaims is what actually drives cost.
+    from grounding.live import MAX_CONTEXT_CHAR_BUDGET, MAX_VERIFIER_CALLS
+
+    n_sub = 30
+    assert n_sub <= MAX_VERIFIER_CALLS
+    doc_chars = MAX_CONTEXT_CHAR_BUDGET // n_sub + 1000
+    big_sections = [{"id": "s1", "page": 1, "char_start": 0,
+                     "char_end": doc_chars, "text": "x" * doc_chars}]
+    payload = json.dumps([{"claim": "c", "subclaims": [f"s{i}" for i in range(n_sub)]}])
+    client = FakeClient(payload, ["SUPPORTED"] * n_sub)
+    with pytest.raises(CheckTooComplex):
+        run_live_check("x", big_sections, client)
+
+
+def test_run_live_check_allows_a_document_within_the_context_budget():
+    from grounding.live import MAX_CONTEXT_CHAR_BUDGET
+
+    n_sub = 2
+    doc_chars = MAX_CONTEXT_CHAR_BUDGET // n_sub - 1000
+    sections = [{"id": "s1", "page": 1, "char_start": 0,
+                 "char_end": doc_chars, "text": "x" * doc_chars}]
+    payload = json.dumps([{"claim": "c", "subclaims": ["s1", "s2"]}])
+    client = FakeClient(payload, ["SUPPORTED", "SUPPORTED"])
+    result = run_live_check("x", sections, client)
+    assert result["claims"][0]["label"] == "grounded"
+
+
 def test_run_live_check_allows_a_normal_size_check():
     payload = json.dumps([{"claim": "c", "subclaims": ["s1", "s2"]}])
     client = FakeClient(payload, ["SUPPORTED", "SUPPORTED"])
