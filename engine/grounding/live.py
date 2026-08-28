@@ -46,7 +46,7 @@ def run_live_check(
     actual measured reliability. Callers needing a user-facing disclosure
     should use `verifier_model` to build one, not fabricate scorecard fields.
     """
-    full_text = "".join(s["text"] for s in sections)
+    full_text = "\n\n".join(s["text"] for s in sections)
     decomposed = decompose_output_claude(ai_output, client)
     total_subclaims = sum(len(d["subclaims"]) for d in decomposed)
     if len(decomposed) > MAX_CLAIMS or total_subclaims > MAX_VERIFIER_CALLS:

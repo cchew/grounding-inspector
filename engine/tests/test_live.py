@@ -118,3 +118,17 @@ def test_run_live_check_allows_a_normal_size_check():
     client = FakeClient(payload, ["SUPPORTED", "SUPPORTED"])
     result = run_live_check("x", SECTIONS, client)
     assert result["claims"][0]["label"] == "grounded"
+
+
+def test_run_live_check_joins_sections_with_a_blank_line(monkeypatch):
+    captured = {}
+
+    def fake_label_claims(decomposed, full_text, sections, verifier_fn, **kwargs):
+        captured["full_text"] = full_text
+        return []
+
+    monkeypatch.setattr("grounding.live.label_claims", fake_label_claims)
+    monkeypatch.setattr("grounding.live.decompose_output_claude", lambda ai, client: [])
+
+    run_live_check("ai", [{"text": "Alpha section."}, {"text": "Beta section."}], client=object())
+    assert captured["full_text"] == "Alpha section.\n\nBeta section."
