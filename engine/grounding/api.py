@@ -149,7 +149,7 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
 
         try:
             sections = extract_reference_document(reference_file.filename or "upload.txt", file_bytes)
-        except Exception:
+        except Exception as exc:
             # Deliberately broad. ingest raises UnsupportedFileType /
             # DocumentTooLarge (both ValueError subclasses), but pypdf and
             # python-docx raise their own unrelated hierarchies on a corrupt
@@ -157,26 +157,39 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
             # KeyError from a malformed zip container. Catching only
             # ValueError let those escape as an unhandled 500 that also
             # bypassed _http_error and dropped the Set-Cookie header.
-            logger.exception("reference document extraction failed")
+            #
+            # Type name only, no traceback: every exception reachable here was
+            # built from the uploaded bytes, and pypdf / python-docx routinely
+            # embed byte fragments of the malformed document in their messages.
+            # The exception class is enough to tell the failure modes apart.
+            logger.warning("reference document extraction failed (%s)", type(exc).__name__)
             _http_error(400, UNREADABLE_DOCUMENT_DETAIL)
 
         device_key = f"device:{device_token}"
         conn = db_conn_factory()
         lock_held = False
         try:
+            # Order: lease lock -> per-minute burst -> IP daily backstop ->
+            # device quota -> fan-out cap (in run_live_check).
+            #
             # Lease lock first: it's what makes the concurrent double-spend
-            # window closed. Then the IP backstop, so a request the backstop
-            # rejects costs the device nothing. The device quota is charged
-            # last and refunded on pipeline failure, so a failure the user
-            # didn't cause doesn't consume one of their three daily checks.
+            # window closed. The per-minute burst gate runs before the daily
+            # backstop because every check_and_increment charges its bucket
+            # even when a later gate rejects -- with the daily backstop first,
+            # 100 req/min would burn the whole 50/day allowance in under a
+            # minute, which is exactly what the burst gate exists to stop. A
+            # request the daily backstop rejects now charges only the minute
+            # bucket, which resets in 60s. The device quota is charged last
+            # and refunded on pipeline failure, so a failure the user didn't
+            # cause doesn't consume one of their three daily checks.
             lock_held = try_acquire_device_lock(conn, device_token)
             if not lock_held:
                 _http_error(429, "A check is already running for this device — please wait for it to finish")
-            if not check_and_increment(conn, f"ip:{client_ip}", IP_DAILY_BACKSTOP, date.today()):
-                _http_error(429, "Too many checks from this network today. Try again tomorrow.")
             minute_key = f"ip:{client_ip}:m{int(time.time() // 60)}"
             if not check_and_increment(conn, minute_key, IP_PER_MINUTE_LIMIT, date.today()):
                 _http_error(429, "Too many checks from this network in the last minute. Wait a moment and try again.")
+            if not check_and_increment(conn, f"ip:{client_ip}", IP_DAILY_BACKSTOP, date.today()):
+                _http_error(429, "Too many checks from this network today. Try again tomorrow.")
             if not check_and_increment(conn, device_key, FREE_TIER_DAILY_LIMIT, date.today()):
                 _http_error(429, "Today's free checks are used up. Try again tomorrow.")
 
@@ -193,6 +206,11 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
                     logger.exception("device quota refund failed after fan-out rejection")
                 _http_error(400, CHECK_TOO_COMPLEX_DETAIL)
             except Exception:
+                # Deliberately asymmetric with the extraction handler above,
+                # which logs the type name only: a traceback carries no locals,
+                # exposure here is limited to the exception message, and these
+                # faults are ours (SDK/parse/DB) rather than reconstructions of
+                # attacker-supplied bytes -- the diagnostics are worth more.
                 logger.exception("live check pipeline failed")
                 try:
                     decrement(conn, device_key, date.today())

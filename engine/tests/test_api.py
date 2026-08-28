@@ -1,5 +1,6 @@
 import io
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
@@ -322,12 +323,22 @@ def test_fan_out_rejection_does_not_burn_device_quota(monkeypatch):
     assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
 
 
+def _freeze_minute(monkeypatch, api_mod, now=1_700_000_000.0):
+    """Pin the clock api.py reads so an epoch-minute rollover mid-test can't
+    move the bucket key and let an over-cap request through. Swaps the module's
+    `time` binding rather than patching the stdlib module itself, so nothing
+    else running under the test client sees a frozen clock."""
+    monkeypatch.setattr(api_mod, "time", SimpleNamespace(time=lambda: now))
+    return now
+
+
 def test_per_minute_ip_burst_limit_blocks_the_eleventh_request(monkeypatch):
     import grounding.api as api_mod
     monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
-    # Isolate the per-minute gate: the device quota (default 3) and, in
-    # principle, the IP daily backstop both run right after the burst check
-    # and would 429 first with a *different* message. Lift the device quota
+    _freeze_minute(monkeypatch, api_mod)
+    # Isolate the per-minute gate: the IP daily backstop and the device quota
+    # (default 3) both run after the burst check and would 429 with a
+    # *different* message once the run exceeds them. Lift the device quota
     # clear of the 10-request run; IP_DAILY_BACKSTOP stays at its default 50
     # (> 10) so it never interferes. The "minute" assertion below then proves
     # the 429 is the burst limit and not another gate.
@@ -347,9 +358,9 @@ def test_per_minute_ip_burst_limit_blocks_the_eleventh_request(monkeypatch):
 def test_per_minute_limit_rejection_does_not_burn_device_quota(monkeypatch):
     import grounding.api as api_mod
     from datetime import date
-    import time
     monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
-    minute_key = f"ip:testclient:m{int(time.time() // 60)}"
+    now = _freeze_minute(monkeypatch, api_mod)
+    minute_key = f"ip:testclient:m{int(now // 60)}"
     store = {"quota": {(minute_key, date.today()): api_mod.IP_PER_MINUTE_LIMIT}, "locks": {}}
     client, _ = _make_client(quota_store=store)
     token = mint_device_token(SECRET)
@@ -357,6 +368,24 @@ def test_per_minute_limit_rejection_does_not_burn_device_quota(monkeypatch):
     r = client.post("/check", data={"ai_output": "x"}, files=_files())
     assert r.status_code == 429
     assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
+
+
+def test_per_minute_rejection_does_not_burn_the_ip_daily_backstop(monkeypatch):
+    # The burst gate must run before the daily backstop. With the old order a
+    # burst-rejected request still charged a daily unit, so 100 req/min drained
+    # the 50/day allowance in under a minute -- the exact scenario the burst
+    # gate exists to prevent.
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    now = _freeze_minute(monkeypatch, api_mod)
+    minute_key = f"ip:testclient:m{int(now // 60)}"
+    store = {"quota": {(minute_key, date.today()): api_mod.IP_PER_MINUTE_LIMIT}, "locks": {}}
+    client, _ = _make_client(quota_store=store)
+    client.cookies.set("gi_device_token", mint_device_token(SECRET))
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 429
+    assert "minute" in r.json()["detail"].lower()
+    assert store["quota"].get(("ip:testclient", date.today()), 0) == 0
 
 
 def test_interactive_docs_are_disabled():
