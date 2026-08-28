@@ -364,3 +364,17 @@ def test_interactive_docs_are_disabled():
     assert client.get("/docs").status_code == 404
     assert client.get("/redoc").status_code == 404
     assert client.get("/openapi.json").status_code == 404
+
+
+def test_cors_allows_configured_origin_and_rejects_others(monkeypatch):
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    client, _ = _make_client()
+
+    ok = client.post("/check", data={"ai_output": "x"}, files=_files(),
+                     headers={"origin": "https://grounding-inspector.netlify.app"})
+    assert ok.headers.get("access-control-allow-origin") == "https://grounding-inspector.netlify.app"
+
+    bad = client.post("/check", data={"ai_output": "x"}, files=_files(),
+                      headers={"origin": "https://evil.example"})
+    assert bad.headers.get("access-control-allow-origin") in (None, "")
