@@ -135,3 +135,36 @@ describe("OmissionPanel via Inspector — multi-method", () => {
     expect(w.findAll('[data-testid^="omission-panel-"]').length).toBe(1);
   });
 });
+
+const liveFixture: Fixture = {
+  ...fixture,
+  live_disclosure:
+    "This check used the same Claude verifier (claude-haiku-4-5-20251001) as Grounding Inspector's other checks. " +
+    "Independent accuracy validation (recall/agreement numbers) exists for the MiniCheck verifier shown in the " +
+    "sample fixtures, not yet for this one — treat results as a research signal, not a certified score.",
+};
+
+describe("Inspector — live result disclosures", () => {
+  it("shows the reliability banner only when live_disclosure is set", () => {
+    const bare = mount(Inspector, { props: { fixture } });
+    expect(bare.find('[data-testid="live-result-banner"]').exists()).toBe(false);
+
+    const live = mount(Inspector, { props: { fixture: liveFixture } });
+    const banner = live.find('[data-testid="live-result-banner"]');
+    expect(banner.exists()).toBe(true);
+    expect(banner.text()).toContain("research signal");
+  });
+
+  it("shows the omission-parity note for a live result that carries no omissions", () => {
+    const live = mount(Inspector, { props: { fixture: liveFixture } });
+    expect(live.find('[data-testid="omission-parity-note"]').exists()).toBe(true);
+
+    const liveWithOmissions = mount(Inspector, {
+      props: { fixture: { ...liveFixture, omissions: fixtureWithOmissions.omissions } },
+    });
+    expect(liveWithOmissions.find('[data-testid="omission-parity-note"]').exists()).toBe(false);
+
+    const browsed = mount(Inspector, { props: { fixture } });
+    expect(browsed.find('[data-testid="omission-parity-note"]').exists()).toBe(false);
+  });
+});

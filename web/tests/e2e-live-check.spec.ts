@@ -135,3 +135,29 @@ test("live check: 'Check a document' clears a live result and returns a fresh fo
   await expect(page.getByTestId("ai-output-input")).toBeVisible();
   await expect(page.getByTestId("output-panel")).toHaveCount(0);
 });
+
+test("live check: the reliability caveat is visible on the result without opening Help", async ({ page }) => {
+  await page.route("**/check", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ai_output: "Medical is covered up to $10,000.",
+        source: { sections: [{ id: "s1", page: 1, char_start: 0, char_end: 40, text: "Medical expenses covered up to $10,000." }] },
+        claims: [{ id: "c1", text: "Medical is covered up to $10,000.", label: "grounded", evidence_span_ids: ["s1"], quote: "Medical expenses", page: 1, rationale: "" }],
+        groundedness: { score: 100, n_grounded: 1, n_partial: 0, n_unsupported: 0 },
+        verifier_model: "claude-haiku-4-5-20251001",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByTestId("ai-output-input").fill("Medical is covered up to $10,000.");
+  await page.getByTestId("reference-file-input").setInputFiles({
+    name: "policy.txt", mimeType: "text/plain", buffer: Buffer.from("Medical expenses covered up to $10,000."),
+  });
+  await page.getByTestId("submit-check").click();
+
+  await expect(page.getByTestId("live-result-banner")).toBeVisible();
+  await expect(page.getByTestId("live-result-banner")).toContainText("research signal");
+});

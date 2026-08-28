@@ -36,6 +36,12 @@ function onSelectOmission(method: string, section: FlaggedSection) {
 <template>
   <div class="inspector">
 
+    <p
+      v-if="fixture.live_disclosure"
+      data-testid="live-result-banner"
+      class="live-result-banner"
+    >{{ fixture.live_disclosure }}</p>
+
     <!-- Full-width output scorecard -->
     <div data-testid="output-panel" class="output-scorecard">
       <div class="output-left">
@@ -106,11 +112,33 @@ function onSelectOmission(method: string, section: FlaggedSection) {
         </section>
       </div>
     </div>
+
+    <p
+      v-if="fixture.live_disclosure && !fixture.omissions?.length"
+      data-testid="omission-parity-note"
+      class="omission-parity-note"
+    >Omission analysis runs on the sample fixtures only.</p>
   </div>
 </template>
 
 <style scoped>
 .inspector { display: flex; flex-direction: column; gap: var(--s-4); }
+
+.live-result-banner {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  padding: var(--s-3) var(--s-4);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-ink-3);
+}
+
+.omission-parity-note {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--color-ink-3);
+}
 
 /* ── Output scorecard (full width) ── */
 .output-scorecard {
