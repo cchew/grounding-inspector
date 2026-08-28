@@ -1,9 +1,26 @@
 import io
+import re
 
 from docx import Document
 from pypdf import PdfReader
 
 MAX_EXTRACTED_CHARS = 60_000
+
+
+def _sections_from_blocks(blocks) -> list[dict]:
+    """One section per non-empty block, ids s1, s2, ... All page 1: neither
+    plain text nor DOCX carries real pagination. char_end is the block's own
+    length (page-relative, only used defensively downstream)."""
+    out: list[dict] = []
+    for raw in blocks:
+        block = raw.strip()
+        if not block:
+            continue
+        out.append({
+            "id": f"s{len(out) + 1}", "page": 1,
+            "char_start": 0, "char_end": len(block), "text": block,
+        })
+    return out
 
 _PDF_MAGIC = b"%PDF-"
 _ZIP_MAGIC = b"PK\x03\x04"
@@ -31,20 +48,32 @@ def extract_pdf(file_bytes: bytes) -> list[dict]:
 
 
 def extract_docx(file_bytes: bytes) -> list[dict]:
-    """DOCX has no fixed pagination without rendering -- the whole document
-    becomes one section, page defaults to 1."""
+    """DOCX has no fixed pagination without rendering. Split into sections on
+    blank paragraphs, and start a new section at a Heading-styled paragraph."""
     doc = Document(io.BytesIO(file_bytes))
-    text = "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
-    if not text:
-        return []
-    return [{"id": "s1", "page": 1, "char_start": 0, "char_end": len(text), "text": text}]
+    blocks: list[str] = []
+    current: list[str] = []
+
+    def flush() -> None:
+        if current:
+            blocks.append("\n".join(current))
+            current.clear()
+
+    for p in doc.paragraphs:
+        style = getattr(p, "style", None)
+        is_heading = bool(style and (getattr(style, "name", "") or "").startswith("Heading"))
+        if not p.text.strip():
+            flush()
+            continue
+        if is_heading:
+            flush()
+        current.append(p.text)
+    flush()
+    return _sections_from_blocks(blocks)
 
 
 def extract_plain_text(text: str) -> list[dict]:
-    text = text.strip()
-    if not text:
-        return []
-    return [{"id": "s1", "page": 1, "char_start": 0, "char_end": len(text), "text": text}]
+    return _sections_from_blocks(re.split(r"\n\s*\n+", text))
 
 
 def _looks_like_text(raw: bytes) -> bool:

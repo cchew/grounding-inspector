@@ -43,8 +43,9 @@ def test_extract_pdf_skips_blank_pages(monkeypatch):
 
 
 class FakeParagraph:
-    def __init__(self, text):
+    def __init__(self, text, style_name=None):
         self.text = text
+        self.style = type("S", (), {"name": style_name})() if style_name else None
 
 
 class FakeDocxDocument:
@@ -52,14 +53,42 @@ class FakeDocxDocument:
         self.paragraphs = [FakeParagraph("First para."), FakeParagraph(""), FakeParagraph("Second para.")]
 
 
-def test_extract_docx_joins_nonempty_paragraphs(monkeypatch):
+def test_extract_docx_splits_on_blank_paragraphs(monkeypatch):
     import grounding.ingest as ingest_mod
     monkeypatch.setattr(ingest_mod, "Document", FakeDocxDocument)
     sections = extract_docx(b"fake-docx-bytes")
+    assert [s["id"] for s in sections] == ["s1", "s2"]
+    assert [s["text"] for s in sections] == ["First para.", "Second para."]
+    assert all(s["page"] == 1 for s in sections)
+
+
+def test_extract_plain_text_splits_on_blank_lines():
+    sections = extract_plain_text("Para one.\n\nPara two.\n\nPara three.")
+    assert [s["id"] for s in sections] == ["s1", "s2", "s3"]
+    assert [s["text"] for s in sections] == ["Para one.", "Para two.", "Para three."]
+    assert sections[1]["char_end"] == len("Para two.")
+
+
+def test_extract_plain_text_single_block_stays_one_section():
+    sections = extract_plain_text("Just one paragraph, no blank lines here.")
     assert len(sections) == 1
-    assert sections[0]["text"] == "First para.\n\nSecond para."
-    assert sections[0]["page"] == 1
     assert sections[0]["id"] == "s1"
+
+
+def test_extract_docx_heading_starts_a_new_section(monkeypatch):
+    import grounding.ingest as ingest_mod
+
+    class HeadingDoc:
+        def __init__(self, b):
+            self.paragraphs = [
+                FakeParagraph("Intro line one."),
+                FakeParagraph("Section Two", style_name="Heading 1"),
+                FakeParagraph("Body of section two."),
+            ]
+
+    monkeypatch.setattr(ingest_mod, "Document", HeadingDoc)
+    sections = extract_docx(b"fake")
+    assert [s["text"] for s in sections] == ["Intro line one.", "Section Two\nBody of section two."]
 
 
 def test_extract_docx_no_content_returns_no_sections(monkeypatch):
