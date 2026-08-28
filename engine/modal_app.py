@@ -46,7 +46,16 @@ def fastapi_app():
     # anything below WARNING (the root logger's "handler of last resort" only
     # fires at WARNING+), so grounding_inspector.api's logger.info/.exception
     # calls would otherwise never reach `modal app logs` at all.
-    logging.basicConfig(level=logging.INFO)
+    #
+    # Scope INFO logging to our own logger only. basicConfig on the root
+    # logger would also surface INFO from anthropic / httpx / psycopg, some
+    # of which log request and response bodies at that level.
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s %(message)s"))
+    app_logger = logging.getLogger("grounding_inspector")
+    app_logger.setLevel(logging.INFO)
+    app_logger.addHandler(handler)
+    app_logger.propagate = False
 
     client = anthropic.Anthropic()
     database_url = os.environ["DATABASE_URL"]

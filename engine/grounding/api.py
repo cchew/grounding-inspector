@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 from datetime import date
@@ -129,14 +130,14 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
             raise HTTPException(status_code=status_code, detail=detail, headers=headers)
 
         client_ip = request.client.host if request.client else "unknown"
-        # Diagnostic only, no behaviour change: request.client.host may be a
-        # constant internal address behind Modal's ingress, which would turn
-        # IP_DAILY_BACKSTOP into a global ceiling shared by every visitor.
-        # Logging both values lets the real deployment's logs settle whether
-        # X-Forwarded-For's leftmost entry should be trusted instead.
+        ip_digest = hashlib.sha256(client_ip.encode("utf-8")).hexdigest()[:12]
+        # Diagnostic only: whether Modal's ingress hands us distinct client
+        # addresses (so IP_DAILY_BACKSTOP is per-visitor, not a global
+        # ceiling) and whether an X-Forwarded-For header is present at all.
+        # The raw address is hashed so logs carry no network-identifying PII.
         logger.info(
-            "check request: client.host=%s x-forwarded-for=%s",
-            client_ip, request.headers.get("x-forwarded-for"),
+            "check request: ip_digest=%s xff_present=%s",
+            ip_digest, bool(request.headers.get("x-forwarded-for")),
         )
 
         if len(ai_output) > MAX_AI_OUTPUT_CHARS:

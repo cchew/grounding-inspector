@@ -31,7 +31,9 @@ def decompose_output(text: str, client, model: str) -> list[dict]:
         data = json.loads(resp["message"]["content"])
         return [{"text": d["claim"], "subclaims": list(d["subclaims"])} for d in data]
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise ValueError(f"decompose_output: could not parse LLM response: {exc}") from exc
+        raise ValueError(
+            f"decompose_output: could not parse LLM response ({type(exc).__name__})"
+        ) from exc
 
 
 def decompose_output_claude(text: str, client, model: str = "claude-haiku-4-5-20251001") -> list[dict]:
@@ -56,7 +58,9 @@ def decompose_output_claude(text: str, client, model: str = "claude-haiku-4-5-20
         data = json.loads(raw)
         return [{"text": d["claim"], "subclaims": list(d["subclaims"])} for d in data]
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise ValueError(f"decompose_output_claude: could not parse response: {exc}") from exc
+        raise ValueError(
+            f"decompose_output_claude: could not parse response ({type(exc).__name__})"
+        ) from exc
 
 
 def build_client():
