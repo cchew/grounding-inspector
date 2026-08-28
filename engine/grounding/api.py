@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import date
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
@@ -33,6 +34,11 @@ MAX_AI_OUTPUT_CHARS = 3_500
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 FREE_TIER_DAILY_LIMIT = 3
 IP_DAILY_BACKSTOP = 50
+# Short-window burst cap layered on top of IP_DAILY_BACKSTOP: the daily
+# backstop alone still lets all 50 checks fire in a few seconds. Bucketed
+# per epoch-minute on the existing gi_quota store (key ip:{ip}:m{minute}),
+# so no schema change and each new minute starts clean.
+IP_PER_MINUTE_LIMIT = 10
 DEVICE_TOKEN_COOKIE = "gi_device_token"
 
 UPLOAD_TOO_LARGE_DETAIL = f"Reference document exceeds {MAX_UPLOAD_BYTES // (1024 * 1024)}MB"
@@ -167,6 +173,9 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
                 _http_error(429, "A check is already running for this device — please wait for it to finish")
             if not check_and_increment(conn, f"ip:{client_ip}", IP_DAILY_BACKSTOP, date.today()):
                 _http_error(429, "Too many checks from this network today. Try again tomorrow.")
+            minute_key = f"ip:{client_ip}:m{int(time.time() // 60)}"
+            if not check_and_increment(conn, minute_key, IP_PER_MINUTE_LIMIT, date.today()):
+                _http_error(429, "Too many checks from this network in the last minute. Wait a moment and try again.")
             if not check_and_increment(conn, device_key, FREE_TIER_DAILY_LIMIT, date.today()):
                 _http_error(429, "Today's free checks are used up. Try again tomorrow.")
 

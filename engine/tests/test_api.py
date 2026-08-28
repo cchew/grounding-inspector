@@ -322,6 +322,43 @@ def test_fan_out_rejection_does_not_burn_device_quota(monkeypatch):
     assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
 
 
+def test_per_minute_ip_burst_limit_blocks_the_eleventh_request(monkeypatch):
+    import grounding.api as api_mod
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    # Isolate the per-minute gate: the device quota (default 3) and, in
+    # principle, the IP daily backstop both run right after the burst check
+    # and would 429 first with a *different* message. Lift the device quota
+    # clear of the 10-request run; IP_DAILY_BACKSTOP stays at its default 50
+    # (> 10) so it never interferes. The "minute" assertion below then proves
+    # the 429 is the burst limit and not another gate.
+    monkeypatch.setattr(api_mod, "FREE_TIER_DAILY_LIMIT", 100)
+    client, _ = _make_client()
+    # each request from TestClient shares host "testclient"; device tokens
+    # rotate per call unless we pin one, and the device lock is released each
+    # time, so only the per-minute IP bucket should bite.
+    client.cookies.set("gi_device_token", mint_device_token(SECRET))
+    for i in range(api_mod.IP_PER_MINUTE_LIMIT):
+        assert client.post("/check", data={"ai_output": "x"}, files=_files()).status_code == 200
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 429
+    assert "minute" in r.json()["detail"].lower()
+
+
+def test_per_minute_limit_rejection_does_not_burn_device_quota(monkeypatch):
+    import grounding.api as api_mod
+    from datetime import date
+    import time
+    monkeypatch.setattr(api_mod, "run_live_check", lambda *a, **k: {"claims": [], "groundedness": {}})
+    minute_key = f"ip:testclient:m{int(time.time() // 60)}"
+    store = {"quota": {(minute_key, date.today()): api_mod.IP_PER_MINUTE_LIMIT}, "locks": {}}
+    client, _ = _make_client(quota_store=store)
+    token = mint_device_token(SECRET)
+    client.cookies.set("gi_device_token", token)
+    r = client.post("/check", data={"ai_output": "x"}, files=_files())
+    assert r.status_code == 429
+    assert store["quota"].get((f"device:{token}", date.today()), 0) == 0
+
+
 def test_interactive_docs_are_disabled():
     client, _ = _make_client()
     assert client.get("/docs").status_code == 404
