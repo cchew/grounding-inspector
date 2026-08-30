@@ -177,6 +177,11 @@ python notebook/add_omissions.py --methods embedkde comprehensiveness_qa   # bil
 
 Requires `ANTHROPIC_API_KEY` in `engine/.env` or `repo/.env` for the billed path. The run regenerates all five fixtures in memory and only writes once every fixture succeeds, so a mid-run API failure leaves the committed fixtures untouched rather than half-updated. Non-omissions fields are asserted byte-for-byte unchanged before any write.
 
+## Document handling
+
+- **Section splitting on upload.** TXT and DOCX uploads are split into sections on blank-line boundaries (DOCX also breaks at Heading-styled paragraphs); PDFs remain one section per page. A document with no blank-line breaks yields a single section. This drives the two-pane click-to-locate interaction. Before it, TXT and DOCX collapsed to one section and every evidence quote was the document's first 80 characters.
+- **Live check returns no scorecard.** A live check returns a groundedness result but no `scorecard` by design. The recall / agreement figures are corpus-level stats measured on the MiniCheck verifier over the sample fixtures, not on the live Claude verifier. The result view shows this caveat inline (not only in Help).
+
 ## Fixture contract
 
 Each fixture is a JSON file conforming to `contract/fixture.schema.json`. Key fields:
