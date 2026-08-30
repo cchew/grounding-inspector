@@ -69,6 +69,11 @@ def label_claims(
             if isinstance(numeric_result, Contradicted):
                 label = "unsupported" if label == "grounded" else "partial"
                 rationale = format_mismatch_rationale(dc["text"], numeric_result)
+        if label == "partial" and not rationale:
+            rationale = (
+                "Some checkable parts of this claim were supported by the "
+                "source and some were not."
+            )
         if recorder is not None:
             recorder.record_generated(verify_act, f"{claim_id}_verdict", {
                 "label": label,

@@ -42,6 +42,23 @@ def test_mixed_subclaims_with_numeric_mismatch_stays_partial():
     assert "$5,000" in claims[0]["rationale"]
 
 
+def test_partial_without_numeric_issue_gets_a_plain_rationale():
+    decomposed = [{
+        "text": "Laptops are covered and there is free roadside assistance.",
+        "subclaims": ["laptops are covered", "there is free roadside assistance"],
+    }]
+
+    def half_true(subclaim, chunks):
+        return ("laptop" in subclaim), 0.9, 0
+
+    claims = label_claims(
+        decomposed, "Camera $4,000; Laptop Computer $4,000; Tablet $3,000.", SECTIONS, half_true,
+    )
+    assert claims[0]["label"] == "partial"
+    assert "supported by the" in claims[0]["rationale"]
+    assert "numeric" not in claims[0]["rationale"]
+
+
 def test_percentage_claim_mismatch_downgrades_with_rounded_policy():
     sections = [
         {"id": "s2", "page": 1, "char_start": 0, "char_end": 40,
