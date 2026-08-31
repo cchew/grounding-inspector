@@ -113,6 +113,15 @@ def test_verify_claude_rejects_a_reply_that_only_starts_with_supported():
     assert verify_subclaim_claude("c", ["d"], client) is False
 
 
+def test_verify_claude_tolerates_a_trailing_period():
+    from grounding.verify import verify_subclaim_claude
+    client, _ = _capture_verify_messages(reply="SUPPORTED.")
+    assert verify_subclaim_claude("c", ["d"], client) is True
+    # a trailing period must not rescue a reply that carries a rationale
+    client, _ = _capture_verify_messages(reply="SUPPORTED, because the document says so.")
+    assert verify_subclaim_claude("c", ["d"], client) is False
+
+
 def test_verify_system_prompt_carries_a_version_marker():
     from grounding.verify import _VERIFY_SYSTEM
     assert "v2" in _VERIFY_SYSTEM

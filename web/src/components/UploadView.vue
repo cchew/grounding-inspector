@@ -8,6 +8,7 @@ const emit = defineEmits<{ result: [Fixture]; browseSample: [] }>();
 
 const aiOutput = ref("");
 const file = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const elapsed = ref(0);
@@ -33,6 +34,14 @@ async function submitCheck() {
     const fixture = await checkDocument(aiOutput.value, file.value);
     track("live_check_submitted");
     emit("result", fixture);
+    // Clear the draft only on success. <KeepAlive> in App.vue caches this
+    // component, so without this a user who reopens "Check a document" and
+    // hits submit silently re-runs the identical paid Claude check. The
+    // <input type=file> DOM node is preserved by KeepAlive too, so its
+    // native .value must be cleared explicitly.
+    aiOutput.value = "";
+    file.value = null;
+    if (fileInput.value) fileInput.value.value = "";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Check failed. Please try again.";
   } finally {
@@ -57,13 +66,19 @@ async function submitCheck() {
     <label class="field-label" for="reference-file-input">Reference document (PDF, DOCX, or TXT)</label>
     <input
       id="reference-file-input"
+      ref="fileInput"
       data-testid="reference-file-input"
       type="file"
       accept=".pdf,.docx,.txt"
       @change="onFileChange"
     />
 
-    <button data-testid="submit-check" class="submit-btn" :disabled="loading" @click="submitCheck">
+    <button
+      data-testid="submit-check"
+      class="submit-btn"
+      :disabled="loading || !aiOutput.trim() || !file"
+      @click="submitCheck"
+    >
       {{ loading ? "Checking..." : "Check grounding" }}
     </button>
 

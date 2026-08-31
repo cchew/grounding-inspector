@@ -20,12 +20,20 @@ function selectFile(wrapper: VueWrapper, name = "policy.txt") {
 }
 
 describe("UploadView", () => {
-  it("shows a validation error when submitting without a file", async () => {
+  it("keeps submit disabled until both the output and a file are provided", async () => {
     const wrapper = mount(UploadView);
+    const submit = () => wrapper.find('[data-testid="submit-check"]');
+
+    expect(submit().attributes("disabled")).toBeDefined();
+
     await wrapper.find('[data-testid="ai-output-input"]').setValue("Some AI claim.");
-    await wrapper.find('[data-testid="submit-check"]').trigger("click");
-    expect(wrapper.find('[data-testid="upload-error"]').text()).toContain("choose a reference document");
+    expect(submit().attributes("disabled")).toBeDefined(); // still no file
+
+    await submit().trigger("click");
     expect(checkDocument).not.toHaveBeenCalled();
+
+    await selectFile(wrapper);
+    expect(submit().attributes("disabled")).toBeUndefined(); // both present now
   });
 
   it("calls checkDocument and emits the result on success", async () => {
@@ -48,6 +56,51 @@ describe("UploadView", () => {
     expect(checkDocument).toHaveBeenCalledWith("Some AI claim.", expect.any(File));
     expect(wrapper.emitted("result")).toBeTruthy();
     expect((wrapper.emitted("result")![0] as [typeof fakeFixture])[0].fixture_id).toBe("live-check");
+  });
+
+  it("clears the pasted output and the chosen file after a successful check", async () => {
+    const fakeFixture = {
+      fixture_id: "live-check",
+      source: { title: "policy.txt", sections: [] },
+      ai_output: "Some AI claim.",
+      claims: [],
+      groundedness: { score: 100, n_grounded: 0, n_partial: 0, n_unsupported: 0 },
+      live_disclosure: "disclosure text",
+    };
+    (checkDocument as ReturnType<typeof vi.fn>).mockResolvedValue(fakeFixture);
+
+    const wrapper = mount(UploadView);
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("Some AI claim.");
+    await selectFile(wrapper);
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+    await flushPromises();
+
+    expect((wrapper.vm as unknown as { aiOutput: string }).aiOutput).toBe("");
+    expect((wrapper.vm as unknown as { file: File | null }).file).toBeNull();
+    expect(
+      (wrapper.find('[data-testid="ai-output-input"]').element as HTMLTextAreaElement).value,
+    ).toBe("");
+    expect(
+      (wrapper.find('[data-testid="reference-file-input"]').element as HTMLInputElement).value,
+    ).toBe("");
+
+    // The cleared form guards against a blind re-run of the paid check.
+    expect(wrapper.find('[data-testid="submit-check"]').attributes("disabled")).toBeDefined();
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+    expect(checkDocument).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the inputs intact after a failed check", async () => {
+    (checkDocument as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("boom"));
+
+    const wrapper = mount(UploadView);
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("Some AI claim.");
+    await selectFile(wrapper);
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+    await flushPromises();
+
+    expect((wrapper.vm as unknown as { aiOutput: string }).aiOutput).toBe("Some AI claim.");
+    expect((wrapper.vm as unknown as { file: File | null }).file).not.toBeNull();
   });
 
   it("shows the server's error message on a failed check", async () => {

@@ -4,6 +4,9 @@ import App from "../src/App.vue";
 import Inspector from "../src/components/Inspector.vue";
 import type { Fixture } from "../src/types";
 
+vi.mock("../src/live-check-api", () => ({ checkDocument: vi.fn() }));
+import { checkDocument } from "../src/live-check-api";
+
 beforeEach(() => {
   global.fetch = vi.fn(() =>
     Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response)
@@ -175,6 +178,76 @@ describe("view navigation", () => {
     await flushPromises();
     expect(wrapper.find('[data-testid="ai-output-input"]').exists()).toBe(true);
     expect(wrapper.find(".fixture-nav").exists()).toBe(false);
+  });
+
+  it("surfaces a live result that resolves after the user switched to browse", async () => {
+    global.fetch = fetchWithFixtures();
+    let resolveCheck!: (v: Fixture) => void;
+    (checkDocument as ReturnType<typeof vi.fn>).mockReturnValue(
+      new Promise<Fixture>((r) => { resolveCheck = r; }),
+    );
+
+    const wrapper = mount(App);
+    await flushPromises();
+
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("a live claim");
+    const fileInput = wrapper.find('[data-testid="reference-file-input"]');
+    Object.defineProperty(fileInput.element, "files", {
+      value: [new File(["doc body"], "policy.txt", { type: "text/plain" })],
+      writable: false,
+    });
+    await fileInput.trigger("change");
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+
+    // User navigates away to browse while the check is still running.
+    await wrapper.find('[data-testid="nav-browse"]').trigger("click");
+    await flushPromises();
+    expect((wrapper.vm as unknown as { mode: string }).mode).toBe("browse");
+
+    // The check now resolves.
+    resolveCheck(minimalFixture("live-check"));
+    await flushPromises();
+
+    // The arriving result wins: mode is forced back to upload and the live
+    // result is displayed rather than silently discarded.
+    expect((wrapper.vm as unknown as { mode: string }).mode).toBe("upload");
+    const inspector = wrapper.findComponent(Inspector);
+    expect(inspector.exists()).toBe(true);
+    expect((inspector.props("fixture") as Fixture).fixture_id).toBe("live-check");
+  });
+
+  it("keeps a completed live result recoverable behind browse mode", async () => {
+    global.fetch = fetchWithFixtures();
+    (checkDocument as ReturnType<typeof vi.fn>).mockResolvedValue(minimalFixture("live-check"));
+
+    const wrapper = mount(App);
+    await flushPromises();
+
+    await wrapper.find('[data-testid="ai-output-input"]').setValue("a live claim");
+    const fileInput = wrapper.find('[data-testid="reference-file-input"]');
+    Object.defineProperty(fileInput.element, "files", {
+      value: [new File(["doc body"], "policy.txt", { type: "text/plain" })],
+      writable: false,
+    });
+    await fileInput.trigger("change");
+    await wrapper.find('[data-testid="submit-check"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findComponent(Inspector).props("fixture") as Fixture).toMatchObject({
+      fixture_id: "live-check",
+    });
+
+    await wrapper.find('[data-testid="nav-browse"]').trigger("click");
+    await flushPromises();
+
+    // switchToBrowse must not null the completed result.
+    expect(
+      ((wrapper.vm as unknown as { liveResult: Fixture | null }).liveResult as Fixture).fixture_id,
+    ).toBe("live-check");
+
+    // nav-check is the "start fresh" path: it does null it.
+    await wrapper.find('[data-testid="nav-check"]').trigger("click");
+    await flushPromises();
+    expect((wrapper.vm as unknown as { liveResult: Fixture | null }).liveResult).toBeNull();
   });
 
   it("keeps the typed AI output across a trip to browse and back", async () => {

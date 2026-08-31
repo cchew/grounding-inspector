@@ -58,7 +58,7 @@ def verify_subclaim_claude(subclaim: str, doc_chunks: list[str], client, model: 
             ),
         }],
     )
-    return msg.content[0].text.strip().upper() == "SUPPORTED"
+    return msg.content[0].text.strip().upper().rstrip(".") == "SUPPORTED"
 
 
 def build_scorer(model_name: str = "flan-t5-large"):

@@ -134,6 +134,9 @@ test("live check: 'Check a document' clears a live result and returns a fresh fo
   await page.getByTestId("nav-check").click();
   await expect(page.getByTestId("ai-output-input")).toBeVisible();
   await expect(page.getByTestId("output-panel")).toHaveCount(0);
+  // Fresh form: the draft is cleared and submit is disabled again.
+  await expect(page.getByTestId("ai-output-input")).toHaveValue("");
+  await expect(page.getByTestId("submit-check")).toBeDisabled();
 });
 
 test("live check: the reliability caveat is visible on the result without opening Help", async ({ page }) => {

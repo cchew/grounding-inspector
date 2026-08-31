@@ -37,7 +37,9 @@ onMounted(async () => {
 
 function switchToBrowse() {
   mode.value = "browse";
-  liveResult.value = null;
+  // Leave liveResult intact: a completed live result stays recoverable
+  // behind browse mode (mirrors P0-A's "leave selectedId/fixture untouched").
+  // Only switchToUpload() nulls it, because that button's job is to start fresh.
   if (!selectedId.value && fixtureIds.value.length > 0) {
     selectedId.value = fixtureIds.value[0] ?? null;
   }
@@ -45,6 +47,9 @@ function switchToBrowse() {
 
 function onLiveResult(result: Fixture) {
   liveResult.value = result;
+  // A result that resolves after the user navigated to browse must still win
+  // and be shown, not be silently discarded behind the sample browser.
+  mode.value = "upload";
 }
 
 watch(selectedId, async (id) => {
@@ -101,7 +106,7 @@ function label(id: string): string {
             type="button"
             data-testid="nav-check"
             class="view-nav-btn"
-            :class="{ active: mode === 'upload' }"
+            :class="{ active: mode === 'upload' && !liveResult }"
             :disabled="showUpload"
             @click="switchToUpload"
           >Check a document</button>
