@@ -1,5 +1,7 @@
 # Grounding Inspector
 
+_Blog post: [Grounding Inspector: Does Your LLM Know When It's Lying?](https://www.herdmentality.xyz/blog/grounding-inspector)_
+
 A Layer-3 groundedness evaluation tool for LLM outputs. Decomposes AI-generated text into atomic claims, verifies each claim against a source document using [MiniCheck](https://github.com/Liyan06/MiniCheck), and surfaces grounded / partial / unsupported verdicts in a two-pane inspector UI.
 
 Built as a proof-of-concept in the travel insurance domain (Australian PDS documents), but the engine and fixture contract are domain-agnostic.
