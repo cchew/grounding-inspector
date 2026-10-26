@@ -57,10 +57,10 @@ CHECK_TOO_COMPLEX_DETAIL = (
     "Try checking a shorter passage."
 )
 
-ALLOWED_ORIGINS = [
-    "https://grounding-inspector.netlify.app",
-    "http://localhost:5173",
-]
+ALLOWED_ORIGINS = ["https://grounding-inspector.netlify.app"]
+# Any port on loopback, http only, anchored. Credentials are on, so Starlette
+# echoes the specific origin and never "*".
+LOCALHOST_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"
 
 
 def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
@@ -88,6 +88,7 @@ def create_app(client, db_conn_factory, device_token_secret: bytes) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
+        allow_origin_regex=LOCALHOST_ORIGIN_REGEX,
         allow_methods=["POST"],
         allow_headers=["*"],
         allow_credentials=True,

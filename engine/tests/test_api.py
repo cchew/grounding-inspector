@@ -407,3 +407,48 @@ def test_cors_allows_configured_origin_and_rejects_others(monkeypatch):
     bad = client.post("/check", data={"ai_output": "x"}, files=_files(),
                       headers={"origin": "https://evil.example"})
     assert bad.headers.get("access-control-allow-origin") in (None, "")
+
+
+import pytest
+
+NETLIFY_ORIGIN = "https://grounding-inspector.netlify.app"
+
+
+def test_cors_netlify_origin_echoed_with_credentials():
+    client, _ = _make_client()
+    r = client.options("/check", headers={
+        "origin": NETLIFY_ORIGIN, "access-control-request-method": "POST"})
+    assert r.headers.get("access-control-allow-origin") == NETLIFY_ORIGIN
+    assert r.headers.get("access-control-allow-credentials") == "true"
+
+
+@pytest.mark.parametrize("origin", [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://localhost",
+    "http://[::1]:5173",
+])
+def test_cors_localhost_any_port_echoed_never_wildcard(origin):
+    client, _ = _make_client()
+    r = client.options("/check", headers={
+        "origin": origin, "access-control-request-method": "POST"})
+    assert r.headers.get("access-control-allow-origin") == origin
+    assert r.headers.get("access-control-allow-credentials") == "true"
+
+
+@pytest.mark.parametrize("origin", [
+    "https://localhost",
+    "http://localhost.evil.com",
+    "http://evil.com/localhost",
+    "http://localhost:abc",
+    "https://evil.example",
+])
+def test_cors_rejects_non_localhost_lookalikes(origin):
+    client, _ = _make_client()
+    r = client.options("/check", headers={
+        "origin": origin, "access-control-request-method": "POST"})
+    assert "access-control-allow-origin" not in r.headers
+    s = client.post("/check", data={"ai_output": "x"}, files=_files(),
+                    headers={"origin": origin})
+    assert "access-control-allow-origin" not in s.headers
